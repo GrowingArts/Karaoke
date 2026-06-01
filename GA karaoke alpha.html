@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <title>Global Growing Arts' Karaoke Pro Web 🎤</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #0c0c24;
+            color: #f8fafc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        #setup-container {
+            text-align: center;
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            max-width: 400px;
+            width: 90%;
+        }
+        h2 { color: #b4b4d2; margin-bottom: 20px; }
+        .file-input {
+            margin: 15px 0;
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+        }
+        label { margin-bottom: 5px; color: #82b4e6; font-size: 14px; }
+        input[type="file"] {
+            background: #334155;
+            padding: 10px;
+            border-radius: 6px;
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+        button {
+            background: #00b4d8;
+            color: #0c0c24;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background 0.2s;
+            width: 100%;
+        }
+        button:hover { background: #0096b4; }
+        #canvas-container {
+            display: none;
+            position: relative;
+        }
+        canvas {
+            background-color: #0c0c24;
+            border-radius: 8px;
+        }
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+        }
+        .btn-control {
+            background: #1e293b;
+            color: #f8fafc;
+            padding: 10px 25px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 14px;
+            width: auto;
+        }
+        .btn-control:hover { background: #334155; }
+    </style>
+</head>
+<body>
+
+    <div id="setup-container">
+        <h2>Karaoke Pro System 🎤</h2>
+        <div class="file-input">
+            <label>1. Επιλέξτε Αρχείο Μουσικής (MP3)</label>
+            <input type="file" id="audioFile" accept="audio/mp3">
+        </div>
+        <div class="file-input">
+            <label>2. Επιλέξτε Αρχείο Στίχων (.txt / .lrc)</label>
+            <input type="file" id="lyricsFile" accept=".txt,.lrc">
+        </div>
+        <button id="startBtn">ΕΝΑΡΞΗ / START</button>
+    </div>
+
+    <div id="canvas-container">
+        <canvas id="karaokeCanvas" width="1024" height="768"></canvas>
+        <div id="controls">
+            <button class="btn-control" id="pauseBtn">ΠΑΥΣΗ</button>
+            <button class="btn-control" id="restartBtn">ΕΠΑΝΕΚΚΙΝΗΣΗ</button>
+        </div>
+    </div>
+
+    <script>
+        let audioCtx, audio, lyrics = [], songTitle = "KARAOKE PRO";
+        const canvas = document.getElementById('karaokeCanvas');
+        const ctx = canvas.getContext('2d');
+        let previousHeights = new Array(36).fill(5);
+
+        document.getElementById('startBtn').addEventListener('click', async () => {
+            const audioInput = document.getElementById('audioFile').files[0];
+            const lyricsInput = document.getElementById('lyricsFile').files[0];
+
+            if (!audioInput || !lyricsInput) {
+                alert("Παρακαλώ επιλέξτε και τα δύο αρχεία!");
+                return;
+            }
+
+            songTitle = audioInput.name.replace(/\.[^/.]+$/, "").toUpperCase();
+            
+            // Ανάγνωση στίχων
+            const lyricsText = await lyricsInput.text();
+            parseEnhancedLyrics(lyricsText);
+
+            // Φόρτωση ήχου
+            audio = new Audio(URL.createObjectURL(audioInput));
+            
+            // Εναλλαγή οθονών
+            document.getElementById('setup-container').style.display = 'none';
+            document.getElementById('canvas-container').style.display = 'block';
+
+            audio.play();
+            requestAnimationFrame(updateFrame);
+        });
+
+        function parseTime(timeStr) {
+            const parts = timeStr.split(':');
+            return parseInt(parts[0]) * 60 + parseFloat(parts[1]);
+        }
+
+        function parseEnhancedLyrics(text) {
+            const lines = text.split('\n');
+            let tempLines = [];
+
+            lines.forEach(line => {
+                line = line.trim();
+                if (!line) return;
+                const lineMatch = line.match(/^\[(\d+:\d+\.\d+)\](.*)/);
+                if (!lineMatch) return;
+
+                const startTime = parseTime(lineMatch[1]);
+                const content = lineMatch[2].trim();
+
+                let wordsData = [];
+                let fullText = "";
+
+                // Regex για τις λέξεις και τα timestamps τους
+                const wordRegex = /<(\d+:\d+\.\d+)>\s*([^<]+)/g;
+                const firstWordMatch = content.match(/^([^<]+)/);
+
+                if (firstWordMatch && firstWordMatch[1].trim()) {
+                    wordsData.push({ time: startTime, text: firstWordMatch[1] });
+                    fullText += firstWordMatch[1];
+                }
+
+                let match;
+                while ((match = wordRegex.exec(content)) !== null) {
+                    wordsData.push({ time: parseTime(match[1]), text: match[2] });
+                    fullText += match[2];
+                }
+
+                if (wordsData.length === 0) {
+                    fullText = content.replace(/<\d+:\d+\.\d+>/g, '').trim();
+                    wordsData.push({ time: startTime, text: fullText });
+                }
+
+                tempLines.push({ start_time: startTime, full_text: fullText, words: wordsData });
+            });
+
+            tempLines.sort((a, b) => a.start_time - b.start_time);
+            
+            for (let i = 0; i < tempLines.length; i++) {
+                if (i + 1 < tempLines.length) {
+                    tempLines[i].end_time = tempLines[i+1].start_time;
+                } else {
+                    tempLines[i].end_time = tempLines[i].start_time + 8.0;
+                }
+            }
+            lyrics = tempLines;
+        }
+
+        // Κουμπιά ελέγχου
+        const pauseBtn = document.getElementById('pauseBtn');
+        pauseBtn.addEventListener('click', () => {
+            if (audio.paused) {
+                audio.play();
+                pauseBtn.innerText = "ΠΑΥΣΗ";
+            } else {
+                audio.pause();
+                pauseBtn.innerText = "ΠΑΙΞΕ";
+            }
+        });
+
+        document.getElementById('restartBtn').addEventListener('click', () => {
+            audio.currentTime = 0;
+            audio.play();
+            pauseBtn.innerText = "ΠΑΥΣΗ";
+        });
+
+        // ΚΥΡΙΟΣ ΒΡΟΧΟΣ ΣΧΕΔΙΑΣΗΣ (Αντίστοιχος με το while running της Pygame)
+        function updateFrame() {
+            const currentTime = audio.currentTime;
+            
+            // Καθαρισμός οθόνης
+            ctx.fillStyle = '#0c0c24';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 1. Τίτλος
+            ctx.fillStyle = '#b4b4d2';
+            ctx.font = 'bold 28px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(songTitle, canvas.width / 2, 50);
+
+            ctx.strokeStyle = '#1e1e46';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(100, 75);
+            ctx.lineTo(canvas.width - 100, 75);
+            ctx.stroke();
+
+            // Εύρεση τρέχοντος στίχου
+            let currentLine = null;
+            let nextLineText = "";
+            const firstLyricTime = lyrics.length > 0 ? lyrics[0].start_time : 0;
+
+            for (let i = 0; i < lyrics.length; i++) {
+                if (currentTime >= lyrics[i].start_time && currentTime < lyrics[i].end_time) {
+                    currentLine = lyrics[i];
+                    if (i + 1 < lyrics.length) nextLineText = lyrics[i+1].full_text;
+                    break;
+                }
+            }
+
+            // 2. Visualizer (Ολόιδια LERP λογική με την Python)
+            let isSpeaking = false;
+            if (currentLine && !audio.paused) {
+                currentLine.words.forEach(w => { if (currentTime >= w.time) isSpeaking = true; });
+            }
+
+            const numBars = 36;
+            const barWidth = 14;
+            const gap = 6;
+            const startX = (canvas.width - (numBars * (barWidth + gap) - gap)) / 2;
+            const baseY = canvas.height - 160;
+            const allowMovement = currentTime >= (firstLyricTime - 3.0);
+
+            for (let i = 0; i < numBars; i++) {
+                let targetHeight = 5;
+                if (allowMovement && !audio.paused && currentTime > 0) {
+                    if (i < 10) {
+                        let wave = Math.abs(Math.sin(currentTime * 2.2 + i * 0.4));
+                        targetHeight = (wave * 55) + 5;
+                    } else if (i >= 10 && i < 26) {
+                        if (isSpeaking) {
+                            let wave = Math.abs(Math.sin(currentTime * 3.5 + i * 0.6));
+                            targetHeight = (wave * 75) + 5;
+                        } else {
+                            targetHeight = 5;
+                        }
+                    } else {
+                        let wave = Math.abs(Math.cos(currentTime * 5.0 - i * 0.8));
+                        targetHeight = (wave * 25) + 5;
+                    }
+                }
+
+                // LERP
+                if (targetHeight > previousHeights[i]) {
+                    previousHeights[i] += (targetHeight - previousHeights[i]) * 0.3;
+                } else {
+                    previousHeights[i] += (targetHeight - previousHeights[i]) * 0.1;
+                }
+
+                ctx.fillStyle = '#00b4d8';
+                // Σχεδίαση στρογγυλεμένου ορθογωνίου (HTML5 Canvas)
+                ctx.beginPath();
+                ctx.roundRect(startX + i * (barWidth + gap), baseY - previousHeights[i], barWidth, previousHeights[i], 3);
+                ctx.fill();
+            }
+
+            // 3. Αντίστροφη μέτρηση
+            const timeUntilFirst = firstLyricTime - currentTime;
+            if (timeUntilFirst > 0 && timeUntilFirst <= 3.0 && !audio.paused) {
+                let countdownNum = Math.floor(timeUntilFirst) + 1;
+                ctx.fillStyle = '#ff4b4b';
+                ctx.font = 'bold 160px Trebuchet MS';
+                ctx.fillText(countdownNum, canvas.width / 2, canvas.height / 2 - 20);
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'italic 26px Arial';
+                ctx.fillText("GET READY...", canvas.width / 2, canvas.height / 2 + 90);
+            }
+
+            // 4. Εμφάνιση Στίχων
+            if (currentLine) {
+                // Υπολογισμός κίτρινων χαρακτήρων
+                let totalYellowChars = 0;
+                currentLine.words.forEach((w, idx) => {
+                    let nextTime = (idx + 1 < currentLine.words.length) ? currentLine.words[idx+1].time : currentLine.end_time;
+                    let duration = nextTime - w.time;
+                    if (currentTime >= w.time) {
+                        if (currentTime < nextTime) {
+                            let elapsed = currentTime - w.time;
+                            let progress = Math.min(elapsed / (duration * 0.4), 1.0);
+                            totalYellowChars += Math.floor(w.text.length * progress);
+                        } else {
+                            totalYellowChars += w.text.length;
+                        }
+                    }
+                });
+
+                ctx.font = 'bold 46px Trebuchet MS'; // Λίγο μικρότερο font για να χωράει στο web wrap
+                let textY = canvas.height / 2 - 20;
+
+                // Σχεδίαση Background κειμένου (Γκρι)
+                ctx.fillStyle = '#6e6e7d';
+                ctx.fillText(currentLine.full_text, canvas.width / 2, textY);
+
+                // Σχεδίαση Φορτώματος (Κίτρινο) πάνω από το γκρι
+                if (totalYellowChars > 0) {
+                    let yellowText = currentLine.full_text.substring(0, totalYellowChars);
+                    ctx.fillStyle = '#ffeb00';
+                    ctx.textAlign = 'left';
+                    
+                    // Υπολογισμός αρχικού X ώστε να είναι κεντραρισμένο
+                    let fullWidth = ctx.measureText(currentLine.full_text).width;
+                    let startXText = (canvas.width - fullWidth) / 2;
+                    
+                    ctx.fillText(yellowText, startXText, textY);
+                    ctx.textAlign = 'center'; // Επαναφορά
+                }
+
+                // Επόμενος στίχος
+                if (nextLineText) {
+                    if (nextLineText.length > 50) nextLineText = nextLineText.substring(0, 47) + "...";
+                    ctx.fillStyle = '#82b4e6';
+                    ctx.font = 'italic 24px Arial';
+                    ctx.fillText("Next: " + nextLineText, canvas.width / 2, canvas.height - 260);
+                }
+            } else if (currentTime < (firstLyricTime - 3.0)) {
+                // Ορχηστρική Εισαγωγή
+                ctx.fillStyle = '#82b4e6';
+                ctx.font = 'italic 32px Arial';
+                ctx.fillText("♪ Instrumental Intro ♪", canvas.width / 2, canvas.height / 2 - 20);
+                
+                if (lyrics.length > 0) {
+                    ctx.fillStyle = '#6e6e7d';
+                    ctx.font = 'italic 24px Arial';
+                    ctx.fillText("First lyric: " + lyrics[0].full_text, canvas.width / 2, canvas.height / 2 + 40);
+                }
+            }
+
+            requestAnimationFrame(updateFrame);
+        }
+    </script>
+</body>
+</html>
