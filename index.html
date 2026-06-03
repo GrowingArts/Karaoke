@@ -2,7 +2,7 @@
 <html lang="el">
 <head>
     <meta charset="UTF-8">
-    <title> GrowingArts' Karaoke 🎤</title>
+    <title>Global Karaoke Pro Web 🎤</title>
     <style>
         body {
             margin: 0;
@@ -15,18 +15,19 @@
             justify-content: center;
             min-height: 100vh;
             overflow: hidden;
+            transition: background-color 0.3s ease; /* Για το εφέ των Party Lights */
         }
         
-        /* 📐 ΔΙΕΥΡΥΜΕΝΟ UI (Μεγαλύτερο Παράθυρο) */
         #setup-container {
             text-align: center;
             background: #1e293b;
             padding: 40px;
             border-radius: 16px;
             box-shadow: 0 15px 35px rgba(0,0,0,0.6);
-            max-width: 650px; /* Αυξήθηκε από 450px */
+            max-width: 650px;
             width: 95%;
             box-sizing: border-box;
+            z-index: 10;
         }
         
         h2 { color: #b4b4d2; margin-bottom: 25px; font-size: 28px; }
@@ -62,13 +63,47 @@
             outline: none;
         }
         
-        textarea {
-            width: 100%;
-            height: 120px;
-            resize: none;
-        }
+        textarea { width: 100%; height: 120px; resize: none; }
         
-        /* Δίγλωσσα μεγάλα κουμπιά */
+        /* 💡 PARTY LIGHTS SWITCH STYLE */
+        .switch-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin: 20px 0;
+            background: #0f172a;
+            padding: 12px;
+            border-radius: 8px;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #475569;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px; width: 18px;
+            left: 4px; bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #00b4d8; }
+        input:checked + .slider:before { transform: translateX(24px); }
+        .switch-label { font-size: 14px; font-weight: bold; color: #cbd5e1; }
+
         button {
             background: #00b4d8;
             color: #0c0c24;
@@ -81,7 +116,6 @@
             margin-top: 10px;
             transition: all 0.2s;
             width: 100%;
-            letter-spacing: 0.5px;
         }
         button:hover { background: #0096b4; transform: translateY(-1px); }
         
@@ -91,7 +125,7 @@
             background: #0f172a;
             padding: 20px;
             border-radius: 10px;
-            max-height: 180px;
+            max-height: 150px;
             overflow-y: auto;
         }
         #history-container h3 { margin: 0 0 12px 0; font-size: 15px; color: #94a3b8; }
@@ -103,7 +137,6 @@
             display: flex;
             justify-content: space-between;
         }
-        .history-time { color: #64748b; font-size: 12px; }
 
         #canvas-container {
             display: none;
@@ -112,6 +145,7 @@
         canvas {
             background-color: #0c0c24;
             border-radius: 8px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.7);
         }
         #controls {
             position: absolute;
@@ -120,6 +154,7 @@
             transform: translateX(-50%);
             display: flex;
             gap: 20px;
+            z-index: 15;
         }
         .btn-control {
             background: #1e293b;
@@ -129,6 +164,8 @@
             font-weight: bold;
             font-size: 15px;
             width: auto;
+            border: none;
+            cursor: pointer;
         }
         .btn-control:hover { background: #334155; }
     </style>
@@ -150,8 +187,16 @@
             </div>
             <div class="file-input">
                 <label>2β. Ή Επικόλληση Στίχων / Or Paste Lyrics</label>
-                <textarea id="lyricsPaste" placeholder="Επικολλήστε τους στίχους εδώ (έναν σε κάθε γραμμή)...&#10;Paste lyrics here (one per line)..."></textarea>
+                <textarea id="lyricsPaste" placeholder="Επικολλήστε τους στίχους εδώ (έναν σε κάθε γραμμή)..."></textarea>
             </div>
+        </div>
+
+        <div class="switch-container">
+            <span class="switch-label">Φώτα Πάρτι / Party Lights:</span>
+            <label class="switch">
+                <input type="checkbox" id="partyLightsToggle" checked>
+                <span class="slider"></span>
+            </label>
         </div>
         
         <button id="startBtn">ΕΝΑΡΞΗ / START 🚀</button>
@@ -173,11 +218,15 @@
     <script>
         let audioCtx, audioSrc, analyser, dataArray, bufferLength;
         let audio, lyrics = [], songTitle = "KARAOKE PRO";
-        let hasTimestamps = true; // Flag για το αν οι στίχοι έχουν χρόνο
+        let hasTimestamps = true;
+        let partyLightsEnabled = true;
         
         const canvas = document.getElementById('karaokeCanvas');
         const ctx = canvas.getContext('2d');
         let previousHeights = new Array(36).fill(5);
+
+        // Μεταβλητές για την ομαλή κίνηση της μπάλας (Bouncing Ball positions)
+        let ballX = 512, ballY = 320, ballTargetX = 512, ballTargetY = 320;
 
         window.addEventListener('DOMContentLoaded', displayHistory);
 
@@ -185,6 +234,7 @@
             const audioInput = document.getElementById('audioFile').files[0];
             const lyricsInput = document.getElementById('lyricsFile').files[0];
             const lyricsPastedText = document.getElementById('lyricsPaste').value.trim();
+            partyLightsEnabled = document.getElementById('partyLightsToggle').checked;
 
             if (!audioInput) {
                 alert("Παρακαλώ επιλέξτε αρχείο μουσικής! / Please select an audio file!");
@@ -198,20 +248,15 @@
             songTitle = audioInput.name.replace(/\.[^/.]+$/, "").toUpperCase();
             saveToHistory(songTitle);
 
-            // Δημιουργία Audio Element
             audio = new Audio(URL.createObjectURL(audioInput));
 
-            // Επεξεργασία Στίχων (Αρχείο ή Textarea)
             if (lyricsPastedText) {
-                // Επικόλληση απλών στίχων χωρίς χρόνο
                 hasTimestamps = false;
                 audio.addEventListener('loadedmetadata', () => {
                     parsePlainLyrics(lyricsPastedText, audio.duration);
                 });
             } else {
-                // Φόρτωση από αρχείο
                 const lyricsText = await lyricsInput.text();
-                // Έλεγχος αν το αρχείο περιέχει χρονισμούς [00:00.00]
                 if (lyricsText.includes('[') && lyricsText.includes(']')) {
                     hasTimestamps = true;
                     parseEnhancedLyrics(lyricsText);
@@ -227,6 +272,9 @@
 
             document.getElementById('setup-container').style.display = 'none';
             document.getElementById('canvas-container').style.display = 'block';
+
+            // 🗺️ ΔΙΟΡΘΩΣΗ: Προσθήκη Click Listener στο Canvas για την Μπάρα Προόδου (Seekable Timeline)
+            canvas.addEventListener('click', handleProgressBarClick);
 
             audio.play();
             requestAnimationFrame(updateFrame);
@@ -248,72 +296,50 @@
             return parseInt(parts[0]) * 60 + parseFloat(parts[1]);
         }
 
-        // 1. ΕΠΕΞΕΡΓΑΣΙΑ ΑΠΛΩΝ ΣΤΙΧΩΝ (Auto-Timing)
         function parsePlainLyrics(text, duration) {
             const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
             if (lines.length === 0) return;
-
             const timePerLine = duration / lines.length;
             let tempLines = [];
-
             lines.forEach((lineText, idx) => {
                 let startTime = idx * timePerLine;
                 let endTime = (idx + 1) * timePerLine;
-                
-                // Δημιουργούμε ένα ψεύτικο word array ώστε να μην κρασάρει ο κώδικας του highlighting
                 let wordsData = [{ time: startTime, text: lineText }];
-                
-                tempLines.push({
-                    start_time: startTime,
-                    end_time: endTime,
-                    full_text: lineText,
-                    words: wordsData
-                });
+                tempLines.push({ start_time: startTime, end_time: endTime, full_text: lineText, words: wordsData });
             });
             lyrics = tempLines;
         }
 
-        // 2. ΕΠΕΞΕΡΓΑΣΙΑ ENHANCED LRC
         function parseEnhancedLyrics(text) {
             const lines = text.split('\n');
             let tempLines = [];
-
             lines.forEach(line => {
                 line = line.trim();
                 if (!line) return;
                 const lineMatch = line.match(/^\[(\d+:\d+\.\d+)\](.*)/);
                 if (!lineMatch) return;
-
                 const startTime = parseTime(lineMatch[1]);
                 const content = lineMatch[2].trim();
-
                 let wordsData = [];
                 let fullText = "";
-
                 const wordRegex = /<(\d+:\d+\.\d+)>\s*([^<]+)/g;
                 const firstWordMatch = content.match(/^([^<]+)/);
-
                 if (firstWordMatch && firstWordMatch[1].trim()) {
                     wordsData.push({ time: startTime, text: firstWordMatch[1] });
                     fullText += firstWordMatch[1];
                 }
-
                 let match;
                 while ((match = wordRegex.exec(content)) !== null) {
                     wordsData.push({ time: parseTime(match[1]), text: match[2] });
                     fullText += match[2];
                 }
-
                 if (wordsData.length === 0) {
                     fullText = content.replace(/<\d+:\d+\.\d+>/g, '').trim();
                     wordsData.push({ time: startTime, text: fullText });
                 }
-
                 tempLines.push({ start_time: startTime, full_text: fullText, words: wordsData });
             });
-
             tempLines.sort((a, b) => a.start_time - b.start_time);
-            
             for (let i = 0; i < tempLines.length; i++) {
                 if (i + 1 < tempLines.length) {
                     tempLines[i].end_time = tempLines[i+1].start_time;
@@ -324,7 +350,27 @@
             lyrics = tempLines;
         }
 
-        // Κουμπιά ελέγχου
+        // 🗺️ CLICK EVENT ΣΤΗΝ ΜΠΑΡΑ ΠΡΟΟΔΟΥ
+        function handleProgressBarClick(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+            
+            // Η μπάρα βρίσκεται στα 25px από το κάτω μέρος, με ύψος 12px
+            const barY = canvas.height - 25;
+            const barHeight = 12;
+            const startX = 60;
+            const endX = canvas.width - 60;
+
+            // Αν ο χρήστης έκανε κλικ στην περιοχή της μπάρας
+            if (clickY >= barY - 10 && clickY <= barY + barHeight + 10 && clickX >= startX && clickX <= endX) {
+                const percentage = (clickX - startX) / (endX - startX);
+                if (audio && audio.duration) {
+                    audio.currentTime = percentage * audio.duration;
+                }
+            }
+        }
+
         const pauseBtn = document.getElementById('pauseBtn');
         pauseBtn.addEventListener('click', () => {
             if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
@@ -343,11 +389,32 @@
             pauseBtn.innerText = "ΠΑΥΣΗ / PAUSE";
         });
 
-        // 🔄 ΚΥΡΙΟΣ ΒΡΟΧΟΣ ΣΧΕΔΙΑΣΗΣ
+        // 🔄 ΚΥΡΙΟΣ ΒΡΟΧΟΣ ΣΧΕΔΙΑΣΗΣ (LOOP)
         function updateFrame() {
             const currentTime = audio.currentTime;
+            const duration = audio.duration || 1;
             
-            ctx.fillStyle = '#0c0c24';
+            if (analyser && !audio.paused) {
+                analyser.getByteFrequencyData(dataArray);
+            }
+
+            // 💡 Γ) PARTY LIGHTS EFFECT (Υπολογισμός έντασης μπάσων)
+            let bassIntensity = 0;
+            if (analyser && !audio.paused) {
+                // Παίρνουμε τις πρώτες 4 θέσεις συχνοτήτων (μπάσα)
+                bassIntensity = (dataArray[0] + dataArray[1] + dataArray[2] + dataArray[3]) / 4;
+            }
+
+            if (partyLightsEnabled && bassIntensity > 80 && !audio.paused) {
+                // Αλλαγή του background του body για ambient room lighting!
+                let hue = (currentTime * 20) % 360;
+                let opacity = (bassIntensity / 255) * 0.3; // max 30% φωτεινότητα για να μην τυφλώνει
+                document.body.style.backgroundColor = `hsla(${hue}, 70%, 15%, ${opacity})`;
+                ctx.fillStyle = `hsla(${hue}, 60%, 8%, 0.85)`;
+            } else {
+                document.body.style.backgroundColor = "#0c0c24";
+                ctx.fillStyle = '#0c0c24';
+            }
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             // Τίτλος
@@ -358,10 +425,7 @@
 
             ctx.strokeStyle = '#1e1e46';
             ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(100, 75);
-            ctx.lineTo(canvas.width - 100, 75);
-            ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(100, 75); ctx.lineTo(canvas.width - 100, 75); ctx.stroke();
 
             // Εύρεση τρέχοντος στίχου
             let currentLine = null;
@@ -377,10 +441,6 @@
             }
 
             // 📊 VISUALIZER
-            if (analyser && !audio.paused) {
-                analyser.getByteFrequencyData(dataArray);
-            }
-
             const numBars = 36;
             const barWidth = 14;
             const gap = 6;
@@ -394,20 +454,18 @@
                     let value = dataArray[dataIndex] || 0;
                     targetHeight = (value / 255) * 140 + 5;
                 }
-
                 if (targetHeight > previousHeights[i]) {
                     previousHeights[i] += (targetHeight - previousHeights[i]) * 0.25;
                 } else {
                     previousHeights[i] += (targetHeight - previousHeights[i]) * 0.15;
                 }
-
                 ctx.fillStyle = `hsl(${180 + previousHeights[i] * 0.5}, 80%, 50%)`;
                 ctx.beginPath();
                 ctx.roundRect(startX + i * (barWidth + gap), baseY - previousHeights[i], barWidth, previousHeights[i], 3);
                 ctx.fill();
             }
 
-            // Αντίστροφη μέτρηση (Μόνο αν υπάρχουν timestamps)
+            // Αντίστροφη μέτρηση
             if (hasTimestamps) {
                 const timeUntilFirst = firstLyricTime - currentTime;
                 if (timeUntilFirst > 0 && timeUntilFirst <= 3.0 && !audio.paused) {
@@ -415,22 +473,20 @@
                     ctx.fillStyle = '#ff4b4b';
                     ctx.font = 'bold 160px Trebuchet MS';
                     ctx.fillText(countdownNum, canvas.width / 2, canvas.height / 2 - 20);
-
-                    ctx.fillStyle = '#ffffff';
-                    ctx.font = 'italic 26px Arial';
-                    ctx.fillText("GET READY...", canvas.width / 2, canvas.height / 2 + 90);
                 }
             }
 
             // Εμφάνιση Στίχων
             if (currentLine) {
                 let totalYellowChars = 0;
+                let activeWordIndex = 0;
                 
                 if (hasTimestamps) {
                     currentLine.words.forEach((w, idx) => {
                         let nextTime = (idx + 1 < currentLine.words.length) ? currentLine.words[idx+1].time : currentLine.end_time;
                         let duration = nextTime - w.time;
                         if (currentTime >= w.time) {
+                            activeWordIndex = idx;
                             if (currentTime < nextTime) {
                                 let elapsed = currentTime - w.time;
                                 let progress = Math.min(elapsed / (duration * 0.4), 1.0);
@@ -441,7 +497,6 @@
                         }
                     });
                 } else {
-                    // Αν δεν έχει timestamps, γεμίζουμε το κίτρινο χρώμα γραμμικά με βάση τον χρόνο της γραμμής
                     let lineDuration = currentLine.end_time - currentLine.start_time;
                     let elapsed = currentTime - currentLine.start_time;
                     let progress = Math.min(elapsed / lineDuration, 1.0);
@@ -451,38 +506,108 @@
                 ctx.font = 'bold 46px Trebuchet MS';
                 let textY = canvas.height / 2 - 20;
 
-                // Background γκρι
+                // Σχεδίαση Background κειμένου
                 ctx.fillStyle = '#6e6e7d';
                 ctx.fillText(currentLine.full_text, canvas.width / 2, textY);
 
-                // Highlight κίτρινο
+                let fullWidth = ctx.measureText(currentLine.full_text).width;
+                let startXText = (canvas.width - fullWidth) / 2;
+
+                // Σχεδίαση Highlight κειμένου
                 if (totalYellowChars > 0) {
                     let yellowText = currentLine.full_text.substring(0, totalYellowChars);
                     ctx.fillStyle = '#ffeb00';
                     ctx.textAlign = 'left';
-                    
-                    let fullWidth = ctx.measureText(currentLine.full_text).width;
-                    let startXText = (canvas.width - fullWidth) / 2;
-                    
                     ctx.fillText(yellowText, startXText, textY);
                     ctx.textAlign = 'center';
                 }
 
-                // 📐 ΎΨΩΣΗ ΤΟΥ NEXT (Επόμενος στίχος)
-                // Ανέβηκε στο canvas.height - 290 (ήταν 260) για να μην "ακουμπάει" τις ψηλές μπάρες
+                // 🔴 Β) BOUNCING BALL LOGIC (Μπάλα που αναπηδά)
+                if (hasTimestamps && !audio.paused) {
+                    // Υπολογισμός θέσης της τρέχουσας λέξης για να πάει εκεί η μπάλα
+                    let textBeforeActive = "";
+                    for(let i=0; i <= activeWordIndex; i++) {
+                        textBeforeActive += currentLine.words[i].text;
+                    }
+                    let currentWordText = currentLine.words[activeWordIndex].text;
+                    
+                    let widthOfTextBefore = ctx.measureText(textBeforeActive).width;
+                    let widthOfCurrentWord = ctx.measureText(currentWordText).width;
+                    
+                    // Στόχος X: Μέση της τρέχουσας ενεργής λέξης
+                    ballTargetX = startXText + widthOfTextBefore - (widthOfCurrentWord / 2);
+                    // Στόχος Y: Λίγο πιο πάνω από το γράμμα (τόξο αναπήδησης)
+                    let pulse = Math.abs(Math.sin(currentTime * Math.PI * 2)) * 25; 
+                    ballTargetY = textY - 45 - pulse;
+                } else {
+                    // Αν είναι plain text, η μπάλα κυλάει γραμμικά κατά μήκος της πρότασης
+                    let lineDuration = currentLine.end_time - currentLine.start_time;
+                    let elapsed = currentTime - currentLine.start_time;
+                    let progress = Math.min(elapsed / lineDuration, 1.0);
+                    ballTargetX = startXText + (fullWidth * progress);
+                    ballTargetY = textY - 45 - (Math.abs(Math.sin(progress * Math.PI * 4)) * 20);
+                }
+
+                // Ομαλή μετατόπιση της μπάλας (Linear Interpolation / Lerp)
+                ballX += (ballTargetX - ballX) * 0.15;
+                ballY += (ballTargetY - ballY) * 0.15;
+
+                // Σχεδίαση Μπάλας
+                ctx.fillStyle = '#ff3366';
+                ctx.beginPath();
+                ctx.arc(ballX, ballY, 12, 0, Math.PI * 2);
+                ctx.fill();
+                // Εσωτερική λάμψη μπάλας
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath(); ctx.arc(ballX - 3, ballY - 3, 4, 0, Math.PI * 2); ctx.fill();
+
+                // Επόμενος στίχος
                 if (nextLineText) {
                     if (nextLineText.length > 50) nextLineText = nextLineText.substring(0, 47) + "...";
                     ctx.fillStyle = '#82b4e6';
                     ctx.font = 'italic 24px Arial';
                     ctx.fillText("Επόμενο / Next: " + nextLineText, canvas.width / 2, canvas.height - 290);
                 }
-            } else if (currentTime < (firstLyricTime - 3.0) && hasTimestamps) {
-                ctx.fillStyle = '#82b4e6';
-                ctx.font = 'italic 32px Arial';
-                ctx.fillText("♪ Instrumental Intro ♪", canvas.width / 2, canvas.height / 2 - 20);
             }
 
+            // 🗺️ Α) ΜΠΑΡΑ ΠΡΟΟΔΟΥ (Interactive Progress Bar Timeline)
+            const barY = canvas.height - 25;
+            const barHeight = 12;
+            const timelineStartX = 60;
+            const timelineEndX = canvas.width - 60;
+            const timelineWidth = timelineEndX - timelineStartX;
+            const progress = currentTime / duration;
+
+            // Background μπάρας (γκρι)
+            ctx.fillStyle = '#1e293b';
+            ctx.beginPath(); ctx.roundRect(timelineStartX, barY, timelineWidth, barHeight, 6); ctx.fill();
+
+            // Γέμισμα προόδου (γαλάζιο neon)
+            ctx.fillStyle = '#00b4d8';
+            ctx.beginPath(); ctx.roundRect(timelineStartX, barY, timelineWidth * progress, barHeight, 6); ctx.fill();
+
+            // Σχεδίαση του κυκλικού Slider (Handle)
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(timelineStartX + (timelineWidth * progress), barY + (barHeight/2), 9, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Ψηφιακό Ρολόι (Χρόνος) αριστερά και δεξιά
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '13px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText(formatTime(currentTime), timelineStartX, barY - 8);
+            ctx.textAlign = 'right';
+            ctx.fillText(formatTime(duration), timelineEndX, barY - 8);
+            ctx.textAlign = 'center';
+
             requestAnimationFrame(updateFrame);
+        }
+
+        function formatTime(secs) {
+            let m = Math.floor(secs / 60);
+            let s = Math.floor(secs % 60);
+            return (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s;
         }
 
         function saveToHistory(title) {
