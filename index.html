@@ -2,7 +2,7 @@
 <html lang="el">
 <head>
     <meta charset="UTF-8">
-    <title>Global Karaoke Pro Web 🎤</title>
+    <title> GrowingArts' Karaoke 🎤</title>
     <style>
         body {
             margin: 0;
@@ -16,66 +16,94 @@
             min-height: 100vh;
             overflow: hidden;
         }
+        
+        /* 📐 ΔΙΕΥΡΥΜΕΝΟ UI (Μεγαλύτερο Παράθυρο) */
         #setup-container {
             text-align: center;
             background: #1e293b;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            max-width: 450px;
-            width: 90%;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+            max-width: 650px; /* Αυξήθηκε από 450px */
+            width: 95%;
+            box-sizing: border-box;
         }
-        h2 { color: #b4b4d2; margin-bottom: 20px; }
+        
+        h2 { color: #b4b4d2; margin-bottom: 25px; font-size: 28px; }
+        
+        .grid-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        @media (max-width: 600px) {
+            .grid-inputs { grid-template-columns: 1fr; }
+        }
+
         .file-input {
-            margin: 15px 0;
             display: flex;
             flex-direction: column;
             text-align: left;
         }
-        label { margin-bottom: 5px; color: #00b4d8; font-size: 14px; font-weight: bold; }
-        input[type="file"] {
+        label { margin-bottom: 8px; color: #00b4d8; font-size: 15px; font-weight: bold; }
+        
+        input[type="file"], textarea {
             background: #334155;
-            padding: 10px;
-            border-radius: 6px;
-            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            border: 2px solid #475569;
             color: white;
-            cursor: pointer;
+            font-family: inherit;
+            box-sizing: border-box;
         }
+        input[type="file"]:focus, textarea:focus {
+            border-color: #00b4d8;
+            outline: none;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 120px;
+            resize: none;
+        }
+        
+        /* Δίγλωσσα μεγάλα κουμπιά */
         button {
             background: #00b4d8;
             color: #0c0c24;
             border: none;
-            padding: 12px 30px;
-            font-size: 16px;
+            padding: 15px 35px;
+            font-size: 18px;
             font-weight: bold;
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
-            margin-top: 15px;
-            transition: background 0.2s;
+            margin-top: 10px;
+            transition: all 0.2s;
             width: 100%;
+            letter-spacing: 0.5px;
         }
-        button:hover { background: #0096b4; }
+        button:hover { background: #0096b4; transform: translateY(-1px); }
         
-        /* Στυλ για το Ιστορικό */
         #history-container {
-            margin-top: 20px;
+            margin-top: 25px;
             text-align: left;
             background: #0f172a;
-            padding: 15px;
-            border-radius: 8px;
-            max-height: 150px;
+            padding: 20px;
+            border-radius: 10px;
+            max-height: 180px;
             overflow-y: auto;
         }
-        #history-container h3 { margin: 0 0 10px 0; font-size: 14px; color: #94a3b8; }
+        #history-container h3 { margin: 0 0 12px 0; font-size: 15px; color: #94a3b8; }
         .history-item {
-            font-size: 13px;
-            padding: 6px 0;
+            font-size: 14px;
+            padding: 8px 0;
             border-bottom: 1px solid #1e293b;
             color: #cbd5e1;
             display: flex;
             justify-content: space-between;
         }
-        .history-time { color: #64748b; font-size: 11px; }
+        .history-time { color: #64748b; font-size: 12px; }
 
         #canvas-container {
             display: none;
@@ -96,10 +124,10 @@
         .btn-control {
             background: #1e293b;
             color: #f8fafc;
-            padding: 10px 25px;
-            border-radius: 6px;
+            padding: 12px 30px;
+            border-radius: 8px;
             font-weight: bold;
-            font-size: 14px;
+            font-size: 15px;
             width: auto;
         }
         .btn-control:hover { background: #334155; }
@@ -107,72 +135,96 @@
 </head>
 <body>
 
-    <!-- ΟΘΟΝΗ ΦΟΡΤΩΣΗΣ ΑΡΧΕΙΩΝ -->
     <div id="setup-container">
         <h2>Karaoke Pro System 🎤</h2>
-        <div class="file-input">
-            <label>1. Επιλέξτε Αρχείο Μουσικής (MP3)</label>
+        
+        <div class="file-input" style="margin-bottom: 20px;">
+            <label>1. Μουσική / Music (MP3)</label>
             <input type="file" id="audioFile" accept="audio/mp3">
         </div>
-        <div class="file-input">
-            <label>2. Επιλέξτε Αρχείο Στίχων (.txt / .lrc)</label>
-            <input type="file" id="lyricsFile" accept=".txt,.lrc">
+        
+        <div class="grid-inputs">
+            <div class="file-input">
+                <label>2α. Αρχείο Στίχων / Lyrics File (.lrc/.txt)</label>
+                <input type="file" id="lyricsFile" accept=".txt,.lrc">
+            </div>
+            <div class="file-input">
+                <label>2β. Ή Επικόλληση Στίχων / Or Paste Lyrics</label>
+                <textarea id="lyricsPaste" placeholder="Επικολλήστε τους στίχους εδώ (έναν σε κάθε γραμμή)...&#10;Paste lyrics here (one per line)..."></textarea>
+            </div>
         </div>
-        <button id="startBtn">ΕΝΑΡΞΗ / START</button>
+        
+        <button id="startBtn">ΕΝΑΡΞΗ / START 🚀</button>
 
-        <!-- UI ΓΙΑ ΤΟ LOCALSTORAGE ΙΣΤΟΡΙΚΟ -->
         <div id="history-container">
-            <h3>Πρόσφατα Τραγούδια (History)</h3>
+            <h3>Πρόσφατα Τραγούδια / Recent History</h3>
             <div id="history-list"></div>
         </div>
     </div>
 
-    <!-- ΟΘΟΝΗ ΕΦΑΡΜΟΓΗΣ (CANVAS) -->
     <div id="canvas-container">
         <canvas id="karaokeCanvas" width="1024" height="768"></canvas>
         <div id="controls">
-            <button class="btn-control" id="pauseBtn">ΠΑΥΣΗ</button>
-            <button class="btn-control" id="restartBtn">ΕΠΑΝΕΚΚΙΝΗΣΗ</button>
+            <button class="btn-control" id="pauseBtn">ΠΑΥΣΗ / PAUSE</button>
+            <button class="btn-control" id="restartBtn">ΕΠΑΝΕΚΚΙΝΗΣΗ / RESTART</button>
         </div>
     </div>
 
     <script>
-        // Μεταβλητές Ήχου & Web Audio API
         let audioCtx, audioSrc, analyser, dataArray, bufferLength;
         let audio, lyrics = [], songTitle = "KARAOKE PRO";
+        let hasTimestamps = true; // Flag για το αν οι στίχοι έχουν χρόνο
         
         const canvas = document.getElementById('karaokeCanvas');
         const ctx = canvas.getContext('2d');
         let previousHeights = new Array(36).fill(5);
 
-        // Φόρτωση του ιστορικού μόλις ανοίξει η σελίδα
         window.addEventListener('DOMContentLoaded', displayHistory);
 
         document.getElementById('startBtn').addEventListener('click', async () => {
             const audioInput = document.getElementById('audioFile').files[0];
             const lyricsInput = document.getElementById('lyricsFile').files[0];
+            const lyricsPastedText = document.getElementById('lyricsPaste').value.trim();
 
-            if (!audioInput || !lyricsInput) {
-                alert("Παρακαλώ επιλέξτε και τα δύο αρχεία!");
+            if (!audioInput) {
+                alert("Παρακαλώ επιλέξτε αρχείο μουσικής! / Please select an audio file!");
+                return;
+            }
+            if (!lyricsInput && !lyricsPastedText) {
+                alert("Παρακαλώ ανεβάστε αρχείο ή επικολλήστε στίχους! / Please upload a file or paste lyrics!");
                 return;
             }
 
             songTitle = audioInput.name.replace(/\.[^/.]+$/, "").toUpperCase();
-            
-            // 💾 LOCALSTORAGE: Αποθήκευση στο ιστορικό
             saveToHistory(songTitle);
 
-            // Ανάγνωση στίχων
-            const lyricsText = await lyricsInput.text();
-            parseEnhancedLyrics(lyricsText);
-
-            // Φόρτωση ήχου
+            // Δημιουργία Audio Element
             audio = new Audio(URL.createObjectURL(audioInput));
-            
-            // 🎛️ WEB AUDIO API ΣΕΤΑΡΙΣΜΑ (Πραγματικό Visualizer)
+
+            // Επεξεργασία Στίχων (Αρχείο ή Textarea)
+            if (lyricsPastedText) {
+                // Επικόλληση απλών στίχων χωρίς χρόνο
+                hasTimestamps = false;
+                audio.addEventListener('loadedmetadata', () => {
+                    parsePlainLyrics(lyricsPastedText, audio.duration);
+                });
+            } else {
+                // Φόρτωση από αρχείο
+                const lyricsText = await lyricsInput.text();
+                // Έλεγχος αν το αρχείο περιέχει χρονισμούς [00:00.00]
+                if (lyricsText.includes('[') && lyricsText.includes(']')) {
+                    hasTimestamps = true;
+                    parseEnhancedLyrics(lyricsText);
+                } else {
+                    hasTimestamps = false;
+                    audio.addEventListener('loadedmetadata', () => {
+                        parsePlainLyrics(lyricsText, audio.duration);
+                    });
+                }
+            }
+
             setupRealVisualizer();
 
-            // Εναλλαγή οθονών
             document.getElementById('setup-container').style.display = 'none';
             document.getElementById('canvas-container').style.display = 'block';
 
@@ -181,19 +233,13 @@
         });
 
         function setupRealVisualizer() {
-            // Δημιουργία του Audio Context (απαραίτητο για browsers)
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            
-            // Σύνδεση του Audio Element με το Web Audio API
             audioSrc = audioCtx.createMediaElementSource(audio);
             analyser = audioCtx.createAnalyser();
-            
             audioSrc.connect(analyser);
-            analyser.connect(audioCtx.destination); // Σύνδεση με τα ηχεία
-            
-            // Ρυθμίσεις FFT (Fast Fourier Transform). Όσο μεγαλύτερο, τόσο πιο πολλές μπάρες.
-            analyser.fftSize = 128; 
-            bufferLength = analyser.frequencyBinCount; // 64 διαθέσιμες συχνότητες
+            analyser.connect(audioCtx.destination);
+            analyser.fftSize = 128;
+            bufferLength = analyser.frequencyBinCount;
             dataArray = new Uint8Array(bufferLength);
         }
 
@@ -202,6 +248,32 @@
             return parseInt(parts[0]) * 60 + parseFloat(parts[1]);
         }
 
+        // 1. ΕΠΕΞΕΡΓΑΣΙΑ ΑΠΛΩΝ ΣΤΙΧΩΝ (Auto-Timing)
+        function parsePlainLyrics(text, duration) {
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            if (lines.length === 0) return;
+
+            const timePerLine = duration / lines.length;
+            let tempLines = [];
+
+            lines.forEach((lineText, idx) => {
+                let startTime = idx * timePerLine;
+                let endTime = (idx + 1) * timePerLine;
+                
+                // Δημιουργούμε ένα ψεύτικο word array ώστε να μην κρασάρει ο κώδικας του highlighting
+                let wordsData = [{ time: startTime, text: lineText }];
+                
+                tempLines.push({
+                    start_time: startTime,
+                    end_time: endTime,
+                    full_text: lineText,
+                    words: wordsData
+                });
+            });
+            lyrics = tempLines;
+        }
+
+        // 2. ΕΠΕΞΕΡΓΑΣΙΑ ENHANCED LRC
         function parseEnhancedLyrics(text) {
             const lines = text.split('\n');
             let tempLines = [];
@@ -255,23 +327,20 @@
         // Κουμπιά ελέγχου
         const pauseBtn = document.getElementById('pauseBtn');
         pauseBtn.addEventListener('click', () => {
-            // Στο iOS, το AudioContext πρέπει να γίνει resume αν παγώσει
-            if (audioCtx && audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
             if (audio.paused) {
                 audio.play();
-                pauseBtn.innerText = "ΠΑΥΣΗ";
+                pauseBtn.innerText = "ΠΑΥΣΗ / PAUSE";
             } else {
                 audio.pause();
-                pauseBtn.innerText = "ΠΑΙΞΕ";
+                pauseBtn.innerText = "ΠΑΙΞΕ / PLAY";
             }
         });
 
         document.getElementById('restartBtn').addEventListener('click', () => {
             audio.currentTime = 0;
             audio.play();
-            pauseBtn.innerText = "ΠΑΥΣΗ";
+            pauseBtn.innerText = "ΠΑΥΣΗ / PAUSE";
         });
 
         // 🔄 ΚΥΡΙΟΣ ΒΡΟΧΟΣ ΣΧΕΔΙΑΣΗΣ
@@ -307,9 +376,9 @@
                 }
             }
 
-            // 📊 ΠΡΑΓΜΑΤΙΚΟ VISUALIZER (Διάβασμα συχνοτήτων)
+            // 📊 VISUALIZER
             if (analyser && !audio.paused) {
-                analyser.getByteFrequencyData(dataArray); // Γεμίζει το array με τιμές 0-255
+                analyser.getByteFrequencyData(dataArray);
             }
 
             const numBars = 36;
@@ -320,61 +389,64 @@
 
             for (let i = 0; i < numBars; i++) {
                 let targetHeight = 5;
-                
-                // Αν παίζει η μουσική, πάρε την πραγματική τιμή της συχνότητας
                 if (analyser && !audio.paused && currentTime > 0) {
-                    // Διαλέγουμε συγκεκριμένες συχνότητες από το dataArray (π.χ. i * 1.5) 
-                    // για να απλωθούν ωραία τα μπάσα και τα πρίμα στις 36 μπάρες μας.
                     let dataIndex = Math.floor(i * 1.4);
                     let value = dataArray[dataIndex] || 0;
-                    
-                    // Μετατροπή της τιμής (0-255) σε ύψος pixels (max 140px)
                     targetHeight = (value / 255) * 140 + 5;
                 }
 
-                // LERP για ομαλή κίνηση (smoothing)
                 if (targetHeight > previousHeights[i]) {
                     previousHeights[i] += (targetHeight - previousHeights[i]) * 0.25;
                 } else {
                     previousHeights[i] += (targetHeight - previousHeights[i]) * 0.15;
                 }
 
-                // Σχεδίαση μπάρας με εφέ gradient (χρώμα) ανάλογα με το ύψος
                 ctx.fillStyle = `hsl(${180 + previousHeights[i] * 0.5}, 80%, 50%)`;
                 ctx.beginPath();
                 ctx.roundRect(startX + i * (barWidth + gap), baseY - previousHeights[i], barWidth, previousHeights[i], 3);
                 ctx.fill();
             }
 
-            // Αντίστροφη μέτρηση
-            const timeUntilFirst = firstLyricTime - currentTime;
-            if (timeUntilFirst > 0 && timeUntilFirst <= 3.0 && !audio.paused) {
-                let countdownNum = Math.floor(timeUntilFirst) + 1;
-                ctx.fillStyle = '#ff4b4b';
-                ctx.font = 'bold 160px Trebuchet MS';
-                ctx.fillText(countdownNum, canvas.width / 2, canvas.height / 2 - 20);
+            // Αντίστροφη μέτρηση (Μόνο αν υπάρχουν timestamps)
+            if (hasTimestamps) {
+                const timeUntilFirst = firstLyricTime - currentTime;
+                if (timeUntilFirst > 0 && timeUntilFirst <= 3.0 && !audio.paused) {
+                    let countdownNum = Math.floor(timeUntilFirst) + 1;
+                    ctx.fillStyle = '#ff4b4b';
+                    ctx.font = 'bold 160px Trebuchet MS';
+                    ctx.fillText(countdownNum, canvas.width / 2, canvas.height / 2 - 20);
 
-                ctx.fillStyle = '#ffffff';
-                ctx.font = 'italic 26px Arial';
-                ctx.fillText("GET READY...", canvas.width / 2, canvas.height / 2 + 90);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'italic 26px Arial';
+                    ctx.fillText("GET READY...", canvas.width / 2, canvas.height / 2 + 90);
+                }
             }
 
             // Εμφάνιση Στίχων
             if (currentLine) {
                 let totalYellowChars = 0;
-                currentLine.words.forEach((w, idx) => {
-                    let nextTime = (idx + 1 < currentLine.words.length) ? currentLine.words[idx+1].time : currentLine.end_time;
-                    let duration = nextTime - w.time;
-                    if (currentTime >= w.time) {
-                        if (currentTime < nextTime) {
-                            let elapsed = currentTime - w.time;
-                            let progress = Math.min(elapsed / (duration * 0.4), 1.0);
-                            totalYellowChars += Math.floor(w.text.length * progress);
-                        } else {
-                            totalYellowChars += w.text.length;
+                
+                if (hasTimestamps) {
+                    currentLine.words.forEach((w, idx) => {
+                        let nextTime = (idx + 1 < currentLine.words.length) ? currentLine.words[idx+1].time : currentLine.end_time;
+                        let duration = nextTime - w.time;
+                        if (currentTime >= w.time) {
+                            if (currentTime < nextTime) {
+                                let elapsed = currentTime - w.time;
+                                let progress = Math.min(elapsed / (duration * 0.4), 1.0);
+                                totalYellowChars += Math.floor(w.text.length * progress);
+                            } else {
+                                totalYellowChars += w.text.length;
+                            }
                         }
-                    }
-                });
+                    });
+                } else {
+                    // Αν δεν έχει timestamps, γεμίζουμε το κίτρινο χρώμα γραμμικά με βάση τον χρόνο της γραμμής
+                    let lineDuration = currentLine.end_time - currentLine.start_time;
+                    let elapsed = currentTime - currentLine.start_time;
+                    let progress = Math.min(elapsed / lineDuration, 1.0);
+                    totalYellowChars = Math.floor(currentLine.full_text.length * progress);
+                }
 
                 ctx.font = 'bold 46px Trebuchet MS';
                 let textY = canvas.height / 2 - 20;
@@ -396,14 +468,15 @@
                     ctx.textAlign = 'center';
                 }
 
-                // Επόμενος στίχος
+                // 📐 ΎΨΩΣΗ ΤΟΥ NEXT (Επόμενος στίχος)
+                // Ανέβηκε στο canvas.height - 290 (ήταν 260) για να μην "ακουμπάει" τις ψηλές μπάρες
                 if (nextLineText) {
                     if (nextLineText.length > 50) nextLineText = nextLineText.substring(0, 47) + "...";
                     ctx.fillStyle = '#82b4e6';
                     ctx.font = 'italic 24px Arial';
-                    ctx.fillText("Next: " + nextLineText, canvas.width / 2, canvas.height - 260);
+                    ctx.fillText("Επόμενο / Next: " + nextLineText, canvas.width / 2, canvas.height - 290);
                 }
-            } else if (currentTime < (firstLyricTime - 3.0)) {
+            } else if (currentTime < (firstLyricTime - 3.0) && hasTimestamps) {
                 ctx.fillStyle = '#82b4e6';
                 ctx.font = 'italic 32px Arial';
                 ctx.fillText("♪ Instrumental Intro ♪", canvas.width / 2, canvas.height / 2 - 20);
@@ -412,20 +485,12 @@
             requestAnimationFrame(updateFrame);
         }
 
-        // 💾 ΣΥΝΑΡΤΗΣΕΙΣ LOCALSTORAGE
         function saveToHistory(title) {
             let history = JSON.parse(localStorage.getItem('karaokeHistory')) || [];
-            
-            // Φιλτράρισμα για να μην έχουμε διπλότυπα συνεχόμενα
             history = history.filter(item => item.title !== title);
-            
-            // Προσθήκη στην αρχή της λίστας με την τρέχουσα ημερομηνία
             const timestamp = new Date().toLocaleTimeString('el-GR', { hour: '2-digit', minute: '2-digit' });
             history.unshift({ title: title, time: timestamp });
-            
-            // Κρατάμε μόνο τα 5 τελευταία τραγούδια
             if (history.length > 5) history.pop();
-            
             localStorage.setItem('karaokeHistory', JSON.stringify(history));
             displayHistory();
         }
@@ -433,12 +498,10 @@
         function displayHistory() {
             const historyList = document.getElementById('history-list');
             const history = JSON.parse(localStorage.getItem('karaokeHistory')) || [];
-            
             if (history.length === 0) {
-                historyList.innerHTML = "<p style='color:#475569; font-size:12px; margin:0;'>Δεν υπάρχουν πρόσφατα τραγούδια.</p>";
+                historyList.innerHTML = "<p style='color:#475569; font-size:13px; margin:0;'>Δεν υπάρχουν πρόσφατα τραγούδια. / No recent history.</p>";
                 return;
             }
-            
             historyList.innerHTML = history.map(item => `
                 <div class="history-item">
                     <span>🎵 ${item.title}</span>
