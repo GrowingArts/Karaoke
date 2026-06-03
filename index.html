@@ -5,10 +5,49 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>GRowingArTs Karaoke 🎤</title>
     <style>
+        /* CSS ΡΥΘΜΙΣΕΙΣ ΓΙΑ ΤΑ ΘΕΜΑΤΑ */
+        :root {
+            --bg-color: #0c0c24;
+            --container-bg: #1e293b;
+            --input-bg: #334155;
+            --border-color: #475569;
+            --accent-color: #00b4d8;
+            --accent-hover: #0096b4;
+            --text-main: #f8fafc;
+            --text-muted: #b4b4d2;
+            --timeline-bg: #1e293b;
+        }
+
+        /* Cyberpunk Theme */
+        [data-theme="cyberpunk"] {
+            --bg-color: #000000;
+            --container-bg: #111111;
+            --input-bg: #222222;
+            --border-color: #ff0055;
+            --accent-color: #ff0055;
+            --accent-hover: #cc0044;
+            --text-main: #00ffcc;
+            --text-muted: #ff0055;
+            --timeline-bg: #222222;
+        }
+
+        /* GRowingArTs Gold Theme */
+        [data-theme="gold"] {
+            --bg-color: #1a1a1a;
+            --container-bg: #262626;
+            --input-bg: #333333;
+            --border-color: #d4af37;
+            --accent-color: #d4af37;
+            --accent-hover: #aa8c2c;
+            --text-main: #ffffff;
+            --text-muted: #e6e6e6;
+            --timeline-bg: #333333;
+        }
+
         body {
             margin: 0;
-            background-color: #0c0c24;
-            color: #f8fafc;
+            background-color: var(--bg-color);
+            color: var(--text-main);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
             flex-direction: column;
@@ -17,12 +56,12 @@
             min-height: 100vh;
             padding: 10px;
             box-sizing: border-box;
-            transition: background-color 0.3s ease;
+            transition: all 0.3s ease;
         }
         
         #setup-container {
             text-align: center;
-            background: #1e293b;
+            background: var(--container-bg);
             padding: 30px;
             border-radius: 16px;
             box-shadow: 0 15px 35px rgba(0,0,0,0.6);
@@ -32,7 +71,7 @@
             z-index: 10;
         }
         
-        h2 { color: #b4b4d2; margin-bottom: 25px; font-size: 26px; }
+        h2 { color: var(--text-muted); margin-bottom: 25px; font-size: 26px; }
         
         .grid-inputs {
             display: grid;
@@ -51,32 +90,40 @@
             flex-direction: column;
             text-align: left;
         }
-        label { margin-bottom: 8px; color: #00b4d8; font-size: 15px; font-weight: bold; }
+        label { margin-bottom: 8px; color: var(--accent-color); font-size: 15px; font-weight: bold; }
         
-        input[type="file"], textarea {
-            background: #334155;
+        input[type="file"], textarea, select {
+            background: var(--input-bg);
             padding: 12px;
             border-radius: 8px;
-            border: 2px solid #475569;
+            border: 2px solid var(--border-color);
             color: white;
             font-family: inherit;
             box-sizing: border-box;
             font-size: 14px;
         }
-        input[type="file"]:focus, textarea:focus {
-            border-color: #00b4d8;
+        input[type="file"]:focus, textarea:focus, select:focus {
+            border-color: var(--accent-color);
             outline: none;
         }
         
         textarea { width: 100%; height: 100px; resize: none; }
         
+        /* Dropdown για τα Themes */
+        .theme-select-container {
+            margin-bottom: 20px;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+        }
+
         .switch-container {
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 12px;
             margin: 20px 0;
-            background: #0f172a;
+            background: rgba(0,0,0,0.2);
             padding: 12px;
             border-radius: 8px;
         }
@@ -104,12 +151,12 @@
             transition: .4s;
             border-radius: 50%;
         }
-        input:checked + .slider { background-color: #00b4d8; }
+        input:checked + .slider { background-color: var(--accent-color); }
         input:checked + .slider:before { transform: translateX(24px); }
         .switch-label { font-size: 14px; font-weight: bold; color: #cbd5e1; }
 
         button {
-            background: #00b4d8;
+            background: var(--accent-color);
             color: #0c0c24;
             border: none;
             padding: 15px 35px;
@@ -121,12 +168,12 @@
             transition: all 0.2s;
             width: 100%;
         }
-        button:hover { background: #0096b4; transform: translateY(-1px); }
+        button:hover { background: var(--accent-hover); transform: translateY(-1px); }
         
         #history-container {
             margin-top: 25px;
             text-align: left;
-            background: #0f172a;
+            background: rgba(0,0,0,0.3);
             padding: 15px;
             border-radius: 10px;
             max-height: 120px;
@@ -136,64 +183,71 @@
         .history-item {
             font-size: 13px;
             padding: 6px 0;
-            border-bottom: 1px solid #1e293b;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
             color: #cbd5e1;
         }
 
-        /* 📱 RESPONSIVE CANVAS CONTAINER */
         #canvas-container {
             display: none;
             position: relative;
             width: 100%;
-            max-width: 900px; /* Μέγιστο πλάτος για PC */
+            max-width: 900px;
             margin: 0 auto;
         }
         canvas {
-            background-color: #0c0c24;
+            background-color: var(--bg-color);
             border-radius: 12px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.7);
-            
-            /* 📐 ΕΔΩ ΓΙΝΕΤΑΙ Η ΜΑΓΕΙΑ: Το canvas προσαρμόζεται στο πλάτος του κινητού */
             width: 100% !important;
             height: auto !important;
             display: block;
         }
         
-        /* 📱 ΜΕΓΑΛΑ ΚΟΥΜΠΙΑ ΓΙΑ ΕΥΚΟΛΟ TAP ΣΤΟ ΚΙΝΗΤΟ */
         #controls {
             position: absolute;
             bottom: 15px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
-            gap: 10px;
+            gap: 8px;
             z-index: 15;
-            width: 90%;
+            width: 95%;
             justify-content: center;
         }
         .btn-control {
-            background: #1e293b;
-            color: #f8fafc;
-            padding: 14px 18px;
+            background: var(--container-bg);
+            color: var(--text-main);
+            padding: 14px 10px;
             border-radius: 10px;
             font-weight: bold;
-            font-size: 13px;
-            border: 2px solid #334155;
+            font-size: 12px;
+            border: 2px solid var(--border-color);
             cursor: pointer;
-            flex: 1; /* Τα κουμπιά μοιράζονται ισόποσα τον χώρο στο κινητό */
+            flex: 1;
             text-align: center;
             box-shadow: 0 4px 10px rgba(0,0,0,0.4);
         }
-        .btn-control:hover { background: #334155; }
-        .btn-nav { background: #00b4d8; color: #0c0c24; border-color: #00b4d8; }
-        .btn-nav:hover { background: #0096b4; }
+        .btn-control:hover { background: var(--input-bg); }
+        .btn-nav { background: var(--accent-color); color: #000; border-color: var(--accent-color); }
+        .btn-nav:hover { background: var(--accent-hover); }
     </style>
 </head>
 <body>
 
+    <!-- ΟΘΟΝΗ ΦΟΡΤΩΣΗΣ ΑΡΧΕΙΩΝ -->
     <div id="setup-container">
         <h2>GRowingArTs Karaoke 🎤</h2>
         
+        <!-- ΕΠΙΛΟΓΗ ΘΕΜΑΤΟΣ -->
+        <div class="theme-select-container">
+            <label for="themeSelect">🎨 Επιλογή Θέματος / Choose Theme</label>
+            <select id="themeSelect">
+                <option value="default">Neon Night (Κλασικό)</option>
+                <option value="cyberpunk">Cyberpunk 2077 (Φούξια / Μαύρο)</option>
+                <option value="gold">GRowingArTs Gold (Χρυσό / Ανθρακί)</option>
+            </select>
+        </div>
+
         <div class="file-input" style="margin-bottom: 20px;">
             <label>1. Μουσική / Music (MP3)</label>
             <input type="file" id="audioFile" accept="audio/mp3">
@@ -206,7 +260,7 @@
             </div>
             <div class="file-input">
                 <label>2β. Ή Επικόλληση Στίχων / Or Paste Lyrics</label>
-                <textarea id="lyricsPaste" placeholder="Επικολλήστε τους στίχους εδώ (απλό κείμενο)..."></textarea>
+                <textarea id="lyricsPaste" placeholder="Επικολλήστε τους στίχους εδώ..."></textarea>
             </div>
         </div>
 
@@ -226,10 +280,12 @@
         </div>
     </div>
 
+    <!-- ΟΘΟΝΗ ΕΦΑΡΜΟΓΗΣ (CANVAS) -->
     <div id="canvas-container">
         <canvas id="karaokeCanvas" width="1024" height="768"></canvas>
         <div id="controls">
             <button class="btn-control btn-nav" id="prevLyricsBtn" style="display:none;">⬅️ ΠΙΣΩ</button>
+            <button class="btn-control" id="rewindBtn">↩️ 10s</button> <!-- ΚΟΥΜΠΙ REWIND -->
             <button class="btn-control" id="pauseBtn">PAUSE</button>
             <button class="btn-control" id="restartBtn">RESET</button>
             <button class="btn-control btn-nav" id="nextLyricsBtn" style="display:none;">ΕΠΟΜΕΝΟ ➡️</button>
@@ -242,6 +298,7 @@
         let hasTimestamps = true;
         let partyLightsEnabled = true;
         let currentPlainBlockIndex = 0; 
+        let currentTheme = 'default';
 
         const canvas = document.getElementById('karaokeCanvas');
         const ctx = canvas.getContext('2d');
@@ -251,6 +308,17 @@
 
         window.addEventListener('DOMContentLoaded', displayHistory);
 
+        // Αλλαγή Θέματος από το Dropdown
+        const themeSelect = document.getElementById('themeSelect');
+        themeSelect.addEventListener('change', (e) => {
+            currentTheme = e.target.value;
+            if (currentTheme === 'default') {
+                document.documentElement.removeAttribute('data-theme');
+            } else {
+                document.documentElement.setAttribute('data-theme', currentTheme);
+            }
+        });
+
         document.getElementById('startBtn').addEventListener('click', async () => {
             const audioInput = document.getElementById('audioFile').files[0];
             const lyricsInput = document.getElementById('lyricsFile').files[0];
@@ -258,11 +326,11 @@
             partyLightsEnabled = document.getElementById('partyLightsToggle').checked;
 
             if (!audioInput) {
-                alert("Παρακαλώ επιλέξτε αρχείο μουσικής! / Please select an audio file!");
+                alert("Παρακαλώ επιλέξτε αρχείο μουσικής!");
                 return;
             }
             if (!lyricsInput && !lyricsPastedText) {
-                alert("Παρακαλώ ανεβάστε αρχείο ή επικολλήστε στίχους! / Please upload a file or paste lyrics!");
+                alert("Παρακαλώ ανεβάστε αρχείο ή επικολλήστε στίχους!");
                 return;
             }
 
@@ -374,11 +442,8 @@
             lyrics = tempLines;
         }
 
-        // 📱 ΥΠΟΛΟΓΙΣΜΟΣ ΚΛΙΚ ΓΙΑ RESPONSIVE CANVAS
         function handleProgressBarClick(e) {
             const rect = canvas.getBoundingClientRect();
-            
-            // Επειδή το canvas μικραίνει/μεγαλώνει με CSS, πρέπει να βρούμε την αναλογία (scale)
             const scaleX = canvas.width / rect.width;
             const scaleY = canvas.height / rect.height;
 
@@ -417,6 +482,13 @@
             pauseBtn.innerText = "PAUSE";
         });
 
+        // ↩️ ΛΕΙΤΟΥΡΓΙΑ REWIND 10s
+        document.getElementById('rewindBtn').addEventListener('click', () => {
+            if (audio) {
+                audio.currentTime = Math.max(0, audio.currentTime - 10);
+            }
+        });
+
         function updateFrame() {
             const currentTime = audio.currentTime;
             const duration = audio.duration || 1;
@@ -430,24 +502,43 @@
                 bassIntensity = (dataArray[0] + dataArray[1] + dataArray[2] + dataArray[3]) / 4;
             }
 
+            // Χρώματα ανάλογα με το Θέμα
+            let canvasBg = '#0c0c24';
+            let titleColor = '#b4b4d2';
+            let lyricDefaultColor = '#6e6e7d';
+            let lyricActiveColor = '#ffeb00';
+            let nextLyricColor = '#82b4e6';
+            let ballColor = '#ff3366';
+            let visualizerHueStart = 180;
+
+            if (currentTheme === 'cyberpunk') {
+                canvasBg = '#000000'; titleColor = '#00ffcc'; lyricDefaultColor = '#333333';
+                lyricActiveColor = '#00ffcc'; nextLyricColor = '#ff0055'; ballColor = '#ffff00';
+                visualizerHueStart = 320;
+            } else if (currentTheme === 'gold') {
+                canvasBg = '#1a1a1a'; titleColor = '#ffffff'; lyricDefaultColor = '#555555';
+                lyricActiveColor = '#d4af37'; nextLyricColor = '#aaaaaa'; ballColor = '#ffffff';
+                visualizerHueStart = 45;
+            }
+
             if (partyLightsEnabled && bassIntensity > 80 && !audio.paused) {
                 let hue = (currentTime * 20) % 360;
                 let opacity = (bassIntensity / 255) * 0.3;
                 document.body.style.backgroundColor = `hsla(${hue}, 70%, 15%, ${opacity})`;
                 ctx.fillStyle = `hsla(${hue}, 60%, 8%, 0.85)`;
             } else {
-                document.body.style.backgroundColor = "#0c0c24";
-                ctx.fillStyle = '#0c0c24';
+                document.body.style.backgroundColor = 'var(--bg-color)';
+                ctx.fillStyle = canvasBg;
             }
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            ctx.fillStyle = '#b4b4d2';
+            ctx.fillStyle = titleColor;
             ctx.font = 'bold 28px Arial';
             ctx.textAlign = 'center';
             ctx.fillText("GRowingArTs Karaoke", canvas.width / 2, 50);
 
-            ctx.strokeStyle = '#1e1e46';
-            ctx.lineWidth = 2;
+            ctx.strokeStyle = currentTheme === 'cyberpunk' ? '#ff0055' : (currentTheme === 'gold' ? '#d4af37' : '#1e1e46');
+            ctx.lineWidth = 1;
             ctx.beginPath(); ctx.moveTo(100, 75); ctx.lineTo(canvas.width - 100, 75); ctx.stroke();
 
             // 📊 VISUALIZER
@@ -469,7 +560,7 @@
                 } else {
                     previousHeights[i] += (targetHeight - previousHeights[i]) * 0.15;
                 }
-                ctx.fillStyle = `hsl(${180 + previousHeights[i] * 0.5}, 80%, 50%)`;
+                ctx.fillStyle = `hsl(${visualizerHueStart + previousHeights[i] * 0.4}, 90%, 50%)`;
                 ctx.beginPath();
                 ctx.roundRect(startX + i * (barWidth + gap), baseY - previousHeights[i], barWidth, previousHeights[i], 3);
                 ctx.fill();
@@ -511,7 +602,7 @@
                     ctx.font = 'bold 46px Trebuchet MS';
                     let textY = canvas.height / 2 - 20;
 
-                    ctx.fillStyle = '#6e6e7d';
+                    ctx.fillStyle = lyricDefaultColor;
                     ctx.fillText(currentLine.full_text, canvas.width / 2, textY);
 
                     let fullWidth = ctx.measureText(currentLine.full_text).width;
@@ -519,7 +610,7 @@
 
                     if (totalYellowChars > 0) {
                         let yellowText = currentLine.full_text.substring(0, totalYellowChars);
-                        ctx.fillStyle = '#ffeb00';
+                        ctx.fillStyle = lyricActiveColor;
                         ctx.textAlign = 'left';
                         ctx.fillText(yellowText, startXText, textY);
                         ctx.textAlign = 'center';
@@ -537,17 +628,17 @@
 
                     ballX += (ballTargetX - ballX) * 0.15; ballY += (ballTargetY - ballY) * 0.15;
 
-                    ctx.fillStyle = '#ff3366'; ctx.beginPath(); ctx.arc(ballX, ballY, 12, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = ballColor; ctx.beginPath(); ctx.arc(ballX, ballY, 12, 0, Math.PI * 2); ctx.fill();
                     ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(ballX - 3, ballY - 3, 4, 0, Math.PI * 2); ctx.fill();
 
                     if (nextLineText) {
                         if (nextLineText.length > 50) nextLineText = nextLineText.substring(0, 47) + "...";
-                        ctx.fillStyle = '#82b4e6';
+                        ctx.fillStyle = nextLyricColor;
                         ctx.font = 'italic 24px Arial';
                         ctx.fillText("Next: " + nextLineText, canvas.width / 2, canvas.height - 290);
                     }
                 } else if (currentTime < (firstLyricTime - 3.0)) {
-                    ctx.fillStyle = '#82b4e6';
+                    ctx.fillStyle = nextLyricColor;
                     ctx.font = 'italic 32px Arial';
                     ctx.fillText("♪ Instrumental Intro ♪", canvas.width / 2, canvas.height / 2 - 20);
                 }
@@ -579,10 +670,10 @@
             const timelineWidth = timelineEndX - timelineStartX;
             const progress = currentTime / duration;
 
-            ctx.fillStyle = '#1e293b';
+            ctx.fillStyle = currentTheme === 'cyberpunk' ? '#222' : (currentTheme === 'gold' ? '#333' : '#1e293b');
             ctx.beginPath(); ctx.roundRect(timelineStartX, barY, timelineWidth, barHeight, 6); ctx.fill();
 
-            ctx.fillStyle = '#00b4d8';
+            ctx.fillStyle = currentTheme === 'cyberpunk' ? '#ff0055' : (currentTheme === 'gold' ? '#d4af37' : '#00b4d8');
             ctx.beginPath(); ctx.roundRect(timelineStartX, barY, timelineWidth * progress, barHeight, 6); ctx.fill();
 
             ctx.fillStyle = '#ffffff';
