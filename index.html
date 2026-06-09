@@ -14,7 +14,6 @@
             --accent-hover: #0096b4;
             --text-main: #f8fafc;
             --text-muted: #b4b4d2;
-            --timeline-bg: #1e293b;
         }
 
         [data-theme="cyberpunk"] {
@@ -26,7 +25,6 @@
             --accent-hover: #cc0044;
             --text-main: #00ffcc;
             --text-muted: #ff0055;
-            --timeline-bg: #222222;
         }
 
         [data-theme="gold"] {
@@ -38,7 +36,6 @@
             --accent-hover: #aa8c2c;
             --text-main: #ffffff;
             --text-muted: #e6e6e6;
-            --timeline-bg: #333333;
         }
 
         body {
@@ -99,10 +96,6 @@
             box-sizing: border-box;
             font-size: 14px;
         }
-        input[type="file"]:focus, textarea:focus, select:focus {
-            border-color: var(--accent-color);
-            outline: none;
-        }
         
         textarea { width: 100%; height: 80px; resize: none; }
         
@@ -123,7 +116,6 @@
             background: rgba(0,0,0,0.2);
             padding: 10px;
             border-radius: 8px;
-            box-sizing: border-box;
         }
         .switch {
             position: relative;
@@ -178,12 +170,7 @@
             overflow-y: auto;
         }
         #history-container h3 { margin: 0 0 8px 0; font-size: 13px; color: #94a3b8; }
-        .history-item {
-            font-size: 12px;
-            padding: 4px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            color: #cbd5e1;
-        }
+        .history-item { font-size: 12px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: #cbd5e1; }
 
         #canvas-container {
             display: none;
@@ -223,30 +210,25 @@
             cursor: pointer;
             flex: 1;
             text-align: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
         }
         .btn-control:hover { background: var(--input-bg); }
         .btn-nav { background: var(--accent-color); color: #000; border-color: var(--accent-color); }
-        .btn-nav:hover { background: var(--accent-hover); }
     </style>
 </head>
 <body>
 
-    <!-- ΟΘΟΝΗ ΦΟΡΤΩΣΗΣ ΑΡΧΕΙΩΝ -->
     <div id="setup-container">
         <h2>GRowingArTs Karaoke 🎤</h2>
         
         <div class="flex-row-options">
-            <!-- ΕΠΙΛΟΓΗ ΘΕΜΑΤΟΣ -->
             <div class="file-input">
                 <label>🎨 Θέμα / Theme</label>
                 <select id="themeSelect">
-                    <option value="default">Neon Night (Κλασικό)</option>
+                    <option value="default">Neon Night</option>
                     <option value="cyberpunk">Cyberpunk 2077</option>
                     <option value="gold">GRowingArTs Gold</option>
                 </select>
             </div>
-            <!-- ΕΤΟΙΜΑ ΤΡΑΓΟΥΔΙΑ -->
             <div class="file-input">
                 <label>🎵 Έτοιμο Τραγούδι (Demo)</label>
                 <select id="demoTrackSelect">
@@ -257,13 +239,11 @@
             </div>
         </div>
 
-        <!-- ΧΕΙΡΟΚΙΝΗΤΟ ΑΝΕΒΑΣΜΑ (Κρύβεται αν επιλεχθεί Demo) -->
         <div id="manual-upload-section">
             <div class="file-input" style="margin-bottom: 15px;">
                 <label>1. Μουσική / Music (MP3)</label>
                 <input type="file" id="audioFile" accept="audio/mp3">
             </div>
-            
             <div class="grid-inputs">
                 <div class="file-input">
                     <label>2α. Αρχείο Στίχων (.lrc/.txt)</label>
@@ -276,7 +256,6 @@
             </div>
         </div>
 
-        <!-- ΔΙΑΚΟΠΤΕΣ LIGHTS & MICROPHONE -->
         <div class="grid-inputs">
             <div class="switch-container">
                 <span class="switch-label">✨ Φώτα Πάρτι:</span>
@@ -297,12 +276,11 @@
         <button id="startBtn">ΕΝΑΡΞΗ / START 🚀</button>
 
         <div id="history-container">
-            <h3>Πρόσφατα Τραγούδια / Recent History</h3>
+            <h3>Πρόσφατα Τραγούδια</h3>
             <div id="history-list"></div>
         </div>
     </div>
 
-    <!-- ΟΘΟΝΗ ΕΦΑΡΜΟΓΗΣ (CANVAS) -->
     <div id="canvas-container">
         <canvas id="karaokeCanvas" width="1024" height="768"></canvas>
         <div id="controls">
@@ -316,7 +294,7 @@
 
     <script>
         let audioCtx, audioSrc, analyser, dataArray, bufferLength;
-        let micStream, micSource, micDelay, micGain; // Μεταβλητές Μικροφώνου
+        let micStream, micSource, micDelay, micGain;
         let audio, lyrics = [], songTitle = "KARAOKE PRO";
         let hasTimestamps = true;
         let partyLightsEnabled = true;
@@ -329,15 +307,13 @@
         let previousHeights = new Array(36).fill(5);
         let ballX = 512, ballY = 320, ballTargetX = 512, ballTargetY = 320;
 
-        // Σκληρά κωδικοποιημένα LRC δεδομένα για τα Demo Tracks
         const demoLyricsData = {
-            blinding: `[00:06.50]I've been <00:07.00>tryin' <00:07.30>to <00:07.50>call\n[00:08.50]I've been <00:09.00>on <00:09.20>my <00:09.40>own <00:09.60>for <00:09.80>long <00:10.20>enough\n[00:14.00]Maybe <00:14.50>you <00:14.70>can <00:14.90>show <00:15.10>me <00:15.40>how <00:15.60>to <00:15.90>love\n[00:21.50]I'm <00:21.80>going <00:22.10>through <00:22.40>withdrawals\n[00:23.50]You <00:23.80>don't <00:24.00>even <00:24.20>have <00:24.40>to <00:24.60>do <00:24.80>too <00:25.00>much\n[00:29.00]You <00:29.40>can <00:29.60>turn <00:29.80>me <00:30.00>on <00:30.20>with <00:30.50>just <00:30.80>a <00:31.00>touch`,
-            queen: `[00:01.00]Buddy, <00:01.50>you're <00:01.70>a <00:01.90>boy, <00:02.10>make <00:02.30>a <00:02.50>big <00:02.80>noise\n[00:03.20]Playing <00:03.60>in <00:03.80>the <00:04.00>street, <00:04.20>gonna <00:04.40>be <00:04.60>a <00:04.80>big <00:05.10>man <00:05.40>someday\n[00:06.00]You <00:06.30>got <00:06.50>mud <00:06.70>on <00:06.90>your <00:07.10>face, <00:07.40>big <00:07.70>disgrace\n[00:08.50]Kicking <00:08.90>your <00:09.10>can <00:09.30>all <00:09.50>over <00:09.80>the <00:10.10>place, <00:10.40>singin'\n[00:11.50]We <00:12.00>will, <00:12.40>we <00:12.70>will <00:13.10>rock <00:13.60>you!\n[00:16.80]We <00:17.20>will, <00:17.60>we <00:17.90>will <00:18.30>rock <00:18.80>you!`
+            blinding: `[00:02.00]I've been <00:02.50>tryin' <00:03.00>to <00:03.30>call\n[00:04.50]I've been <00:05.00>on <00:05.30>my <00:05.60>own <00:05.90>for <00:06.20>long <00:06.50>enough\n[00:08.00]Maybe <00:08.50>you <00:08.80>can <00:09.10>show <00:09.40>me <00:09.70>how <00:10.00>to <00:10.50>love\n[00:12.00]I'm <00:12.30>going <00:12.60>through <00:12.90>withdrawals`,
+            queen: `[00:01.00]Buddy, <00:01.50>you're <00:01.70>a <00:01.90>boy, <00:02.10>make <00:02.30>a <00:02.50>big <00:02.80>noise\n[00:03.20]Playing <00:03.60>in <00:03.80>the <00:04.00>street, <00:04.20>gonna <00:04.40>be <00:04.60>a <00:04.80>big <00:05.10>man <00:05.40>someday\n[00:06.00]You <00:06.30>got <00:06.50>mud <00:06.70>on <00:06.90>your <00:07.10>face, <00:07.40>big <00:07.70>disgrace`
         };
 
         window.addEventListener('DOMContentLoaded', displayHistory);
 
-        // UI Event Listeners
         const themeSelect = document.getElementById('themeSelect');
         themeSelect.addEventListener('change', (e) => {
             currentTheme = e.target.value;
@@ -346,12 +322,7 @@
 
         const demoTrackSelect = document.getElementById('demoTrackSelect');
         demoTrackSelect.addEventListener('change', (e) => {
-            const manualSection = document.getElementById('manual-upload-section');
-            if (e.target.value !== 'none') {
-                manualSection.style.display = 'none'; // Κρύψε το ανέβασμα αν επιλεχθεί έτοιμο track
-            } else {
-                manualSection.style.display = 'block';
-            }
+            document.getElementById('manual-upload-section').style.display = (e.target.value !== 'none') ? 'none' : 'block';
         });
 
         document.getElementById('startBtn').addEventListener('click', async () => {
@@ -364,21 +335,20 @@
 
             let lyricsTextToParse = "";
 
-            // Διαχείριση Demo ή Χειροκίνητου αρχείου
             if (demoSelection !== 'none') {
                 hasTimestamps = true;
                 lyricsTextToParse = demoLyricsData[demoSelection];
+                // 🛠️ ΝΕΑ ΑΣΦΑΛΗ HTTPS LINKS ΓΙΑ SAFARI
                 if (demoSelection === 'blinding') {
                     songTitle = "THE WEEKND - BLINDING LIGHTS (DEMO)";
-                    // Χρήση royalty-free pop-synth audio
-                    audio = new Audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3");
+                    audio = new Audio("https://actions.google.com/sounds/v1/science_fiction/ambient_space_machine.ogg"); // Fallback loopable track
                 } else {
                     songTitle = "QUEEN - WE WILL ROCK YOU (DEMO)";
-                    // Χρήση royalty-free rock-style audio
-                    audio = new Audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3");
+                    audio = new Audio("https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg");
                 }
+                audio.crossOrigin = "anonymous";
             } else {
-                if (!audioInput) { alert("Παρακαλώ επιλέξτε μουσική ή ένα έτοιμο Demo κομμάτι!"); return; }
+                if (!audioInput) { alert("Παρακαλώ επιλέξτε αρχείο μουσικής!"); return; }
                 if (!lyricsInput && !lyricsPastedText) { alert("Παρακαλώ δώστε στίχους!"); return; }
                 songTitle = audioInput.name.replace(/\.[^/.]+$/, "").toUpperCase();
                 audio = new Audio(URL.createObjectURL(audioInput));
@@ -393,59 +363,62 @@
                 }
             }
 
-            if (hasTimestamps && lyricsTextToParse) {
-                parseEnhancedLyrics(lyricsTextToParse);
-            } else if (!hasTimestamps) {
-                showNavigationButtons();
-            }
+            if (hasTimestamps && lyricsTextToParse) parseEnhancedLyrics(lyricsTextToParse);
+            else if (!hasTimestamps) showNavigationButtons();
 
             saveToHistory(songTitle);
 
-            // Έναρξη Web Audio & Ρύθμιση Μικροφώνου/Visualizer
-            setupAudioPipeline();
+            // 🛠️ SAFARI FIX: Ενεργοποίηση Audio Context ΜΕΣΑ από το click event
+            await setupAudioPipeline();
 
             document.getElementById('setup-container').style.display = 'none';
             document.getElementById('canvas-container').style.display = 'block';
 
             canvas.addEventListener('click', handleProgressBarClick);
-            audio.play();
+            
+            // 🛠️ SAFARI FIX: Ξαναδοκιμάζουμε το play αν κολλήσει
+            audio.play().catch(e => {
+                console.log("Auto-play blocked, waiting for user toggle");
+            });
+            
             requestAnimationFrame(updateFrame);
         });
 
         async function setupAudioPipeline() {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            // 🛠️ SAFARI COMPATIBLE AUDIO CONTEXT
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContextClass();
+            
+            // Αν ο Safari τον έχει βάλει σε αναμονή, τον ξυπνάμε αναγκαστικά
+            if (audioCtx.state === 'suspended') {
+                await audioCtx.resume();
+            }
+
             audioSrc = audioCtx.createMediaElementSource(audio);
             analyser = audioCtx.createAnalyser();
-            
             audioSrc.connect(analyser);
             analyser.connect(audioCtx.destination);
             analyser.fftSize = 128;
             bufferLength = analyser.frequencyBinCount;
             dataArray = new Uint8Array(bufferLength);
 
-            // 🎤 LIVE ΕΦΕ ΜΙΚΡΟΦΩΝΟΥ ΜΕ ECHO (DELAY NODE)
-            if (micEchoEnabled) {
+            // 🎙️ SAFARI & NO-MIC PROTECTION
+            if (micEchoEnabled && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 try {
-                    micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false } });
+                    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
                     micSource = audioCtx.createMediaStreamSource(micStream);
-                    
                     micDelay = audioCtx.createDelay();
-                    micDelay.delayTime = 0.25; // 250ms καθυστέρηση για τέλεια ηχώ καραόκε
-                    
+                    micDelay.delayTime = 0.25;
                     micGain = audioCtx.createGain();
-                    micGain.gain.value = 0.4; // Ένταση της ηχούς
+                    micGain.gain.value = 0.4;
 
-                    // Σύνδεση: Mic -> Ηχεία (Καθαρή φωνή)
                     micSource.connect(audioCtx.destination);
-                    
-                    // Σύνδεση: Mic -> Καθυστέρηση -> Ένταση -> Επιστροφή στην Καθυστέρηση (Feedback loop) -> Ηχεία
                     micSource.connect(micDelay);
                     micDelay.connect(micGain);
-                    micGain.connect(micDelay); // Feedback loop
-                    micGain.connect(audioCtx.destination); // Έξοδος εφέ στα ηχεία
+                    micGain.connect(micDelay);
+                    micGain.connect(audioCtx.destination);
                 } catch (err) {
-                    console.log("Δεν βρέθηκε μικρόφωνο ή δεν δόθηκε άδεια: ", err);
-                    alert("Δεν ήταν δυνατή η σύνδεση του μικροφώνου. Το τραγούδι θα ξεκινήσει κανονικά.");
+                    console.log("Μικρόφωνο δεν βρέθηκε/υποστηρίζεται:", err);
                 }
             }
         }
@@ -458,9 +431,8 @@
         function parsePlainLyricsIntoBlocks(text) {
             const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
             lyrics = []; currentPlainBlockIndex = 0;
-            const linesPerBlock = 7; 
-            for (let i = 0; i < lines.length; i += linesPerBlock) {
-                lyrics.push(lines.slice(i, i + linesPerBlock));
+            for (let i = 0; i < lines.length; i += 7) {
+                lyrics.push(lines.slice(i, i + 7));
             }
         }
 
@@ -473,8 +445,7 @@
         }
 
         function parseEnhancedLyrics(text) {
-            const lines = text.split('\n');
-            let tempLines = [];
+            const lines = text.split('\n'); let tempLines = [];
             lines.forEach(line => {
                 line = line.trim(); if (!line) return;
                 const lineMatch = line.match(/^\[(\d+:\d+\.\d+)\](.*)/);
@@ -513,15 +484,14 @@
             const clickX = (e.clientX - rect.left) * scaleX;
             const clickY = (e.clientY - rect.top) * scaleY;
             const barY = canvas.height - 25, startX = 60, endX = canvas.width - 60;
-
             if (clickY >= barY - 20 && clickY <= barY + 32 && clickX >= startX && clickX <= endX) {
                 if (audio && audio.duration) audio.currentTime = ((clickX - startX) / (endX - startX)) * audio.duration;
             }
         }
 
         const pauseBtn = document.getElementById('pauseBtn');
-        pauseBtn.addEventListener('click', () => {
-            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        pauseBtn.addEventListener('click', async () => {
+            if (audioCtx && audioCtx.state === 'suspended') await audioCtx.resume();
             if (audio.paused) { audio.play(); pauseBtn.innerText = "PAUSE"; } 
             else { audio.pause(); pauseBtn.innerText = "PLAY"; }
         });
@@ -541,7 +511,6 @@
             const duration = audio.duration || 1;
             
             if (analyser && !audio.paused) analyser.getByteFrequencyData(dataArray);
-
             let bassIntensity = analyser && !audio.paused ? (dataArray[0] + dataArray[1] + dataArray[2] + dataArray[3]) / 4 : 0;
 
             let canvasBg = '#0c0c24', titleColor = '#b4b4d2', lyricDefaultColor = '#6e6e7d', lyricActiveColor = '#ffeb00', nextLyricColor = '#82b4e6', ballColor = '#ff3366', visualizerHueStart = 180;
@@ -567,7 +536,7 @@
             ctx.strokeStyle = currentTheme === 'cyberpunk' ? '#ff0055' : (currentTheme === 'gold' ? '#d4af37' : '#1e1e46');
             ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(100, 75); ctx.lineTo(canvas.width - 100, 75); ctx.stroke();
 
-            // 📊 VISUALIZER
+            // Visualizer
             const numBars = 36, barWidth = 14, gap = 6, startX = (canvas.width - (numBars * (barWidth + gap) - gap)) / 2, baseY = canvas.height - 160;
             for (let i = 0; i < numBars; i++) {
                 let targetHeight = 5;
@@ -579,11 +548,10 @@
                 ctx.beginPath(); ctx.roundRect(startX + i * (barWidth + gap), baseY - previousHeights[i], barWidth, previousHeights[i], 3); ctx.fill();
             }
 
-            // --- ΣΤΙΧΟΙ ---
+            // Lyrics
             if (hasTimestamps) {
                 let currentLine = null, nextLineText = "";
                 const firstLyricTime = lyrics.length > 0 ? lyrics[0].start_time : 0;
-
                 for (let i = 0; i < lyrics.length; i++) {
                     if (currentTime >= lyrics[i].start_time && currentTime < lyrics[i].end_time) {
                         currentLine = lyrics[i];
@@ -591,7 +559,6 @@
                         break;
                     }
                 }
-
                 if (currentLine) {
                     let totalYellowChars = 0, activeWordIndex = 0;
                     currentLine.words.forEach((w, idx) => {
@@ -604,51 +571,31 @@
 
                     ctx.font = 'bold 46px Trebuchet MS'; let textY = canvas.height / 2 - 20;
                     ctx.fillStyle = lyricDefaultColor; ctx.fillText(currentLine.full_text, canvas.width / 2, textY);
-
                     let fullWidth = ctx.measureText(currentLine.full_text).width, startXText = (canvas.width - fullWidth) / 2;
                     if (totalYellowChars > 0) {
                         ctx.fillStyle = lyricActiveColor; ctx.textAlign = 'left';
                         ctx.fillText(currentLine.full_text.substring(0, totalYellowChars), startXText, textY);
                         ctx.textAlign = 'center';
                     }
-
                     let textBeforeActive = ""; for(let i=0; i <= activeWordIndex; i++) textBeforeActive += currentLine.words[i].text;
                     ballTargetX = startXText + ctx.measureText(textBeforeActive).width - (ctx.measureText(currentLine.words[activeWordIndex].text).width / 2);
                     ballTargetY = textY - 45 - Math.abs(Math.sin(currentTime * Math.PI * 2)) * 25;
                     ballX += (ballTargetX - ballX) * 0.15; ballY += (ballTargetY - ballY) * 0.15;
-
                     ctx.fillStyle = ballColor; ctx.beginPath(); ctx.arc(ballX, ballY, 12, 0, Math.PI * 2); ctx.fill();
-                    ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(ballX - 3, ballY - 3, 4, 0, Math.PI * 2); ctx.fill();
-
-                    if (nextLineText) {
-                        ctx.fillStyle = nextLyricColor; ctx.font = 'italic 24px Arial';
-                        ctx.fillText("Next: " + (nextLineText.length > 50 ? nextLineText.substring(0, 47) + "..." : nextLineText), canvas.width / 2, canvas.height - 290);
-                    }
-                } else if (currentTime < (firstLyricTime - 3.0)) {
-                    ctx.fillStyle = nextLyricColor; ctx.font = 'italic 32px Arial'; ctx.fillText("♪ Instrumental Intro ♪", canvas.width / 2, canvas.height / 2 - 20);
                 }
             } else if (lyrics.length > 0) {
                 ctx.font = '32px Arial'; ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center';
                 lyrics[currentPlainBlockIndex].forEach((lineText, index) => ctx.fillText(lineText, canvas.width / 2, 180 + (index * 48)));
-                ctx.font = 'bold 16px Arial'; ctx.fillStyle = '#64748b'; ctx.fillText(`Page: ${currentPlainBlockIndex + 1} / ${lyrics.length}`, canvas.width / 2, canvas.height - 240);
             }
 
-            // 🗺️ ΜΠΑΡΑ ΠΡΟΟΔΟΥ
+            // Timeline
             const barY = canvas.height - 25, timelineStartX = 60, timelineEndX = canvas.width - 60, timelineWidth = timelineEndX - timelineStartX, progress = currentTime / duration;
-            ctx.fillStyle = currentTheme === 'cyberpunk' ? '#222' : (currentTheme === 'gold' ? '#333' : '#1e293b');
-            ctx.beginPath(); ctx.roundRect(timelineStartX, barY, timelineWidth, 12, 6); ctx.fill();
-            ctx.fillStyle = currentTheme === 'cyberpunk' ? '#ff0055' : (currentTheme === 'gold' ? '#d4af37' : '#00b4d8');
+            ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.roundRect(timelineStartX, barY, timelineWidth, 12, 6); ctx.fill();
+            ctx.fillStyle = varColor = currentTheme === 'cyberpunk' ? '#ff0055' : (currentTheme === 'gold' ? '#d4af37' : '#00b4d8');
             ctx.beginPath(); ctx.roundRect(timelineStartX, barY, timelineWidth * progress, 12, 6); ctx.fill();
             ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(timelineStartX + (timelineWidth * progress), barY + 6, 9, 0, Math.PI * 2); ctx.fill();
 
-            ctx.fillStyle = '#94a3b8'; ctx.font = '13px Arial'; ctx.textAlign = 'left'; ctx.fillText(formatTime(currentTime), timelineStartX, barY - 8);
-            ctx.textAlign = 'right'; ctx.fillText(formatTime(duration), timelineEndX, barY - 8); ctx.textAlign = 'center';
-
             requestAnimationFrame(updateFrame);
-        }
-
-        function formatTime(secs) {
-            let m = Math.floor(secs / 60), s = Math.floor(secs % 60); return (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s;
         }
 
         function saveToHistory(title) {
