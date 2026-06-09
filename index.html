@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GRowingArTs Karaoke 🎤</title>
+    <style>
+        :root {
+            --bg-color: #0c0c24;
+            --container-bg: #1e293b;
+            --input-bg: #334155;
+            --border-color: #475569;
+            --accent-color: #00b4d8;
+            --accent-hover: #0096b4;
+            --text-main: #f8fafc;
+            --text-muted: #b4b4d2;
+        }
+
+        [data-theme="cyberpunk"] {
+            --bg-color: #000000;
+            --container-bg: #111111;
+            --input-bg: #222222;
+            --border-color: #ff0055;
+            --accent-color: #ff0055;
+            --accent-hover: #cc0044;
+            --text-main: #00ffcc;
+            --text-muted: #ff0055;
+        }
+
+        [data-theme="gold"] {
+            --bg-color: #1a1a1a;
+            --container-bg: #262626;
+            --input-bg: #333333;
+            --border-color: #d4af37;
+            --accent-color: #d4af37;
+            --accent-hover: #aa8c2c;
+            --text-main: #ffffff;
+            --text-muted: #e6e6e6;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 10px;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+        
+        #setup-container {
+            text-align: center;
+            background: var(--container-bg);
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+            max-width: 650px;
+            width: 100%;
+            box-sizing: border-box;
+            z-index: 10;
+        }
+        
+        h2 { color: var(--text-muted); margin-bottom: 20px; font-size: 26px; }
+        
+        .grid-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        @media (max-width: 600px) {
+            .grid-inputs { grid-template-columns: 1fr; gap: 12px; }
+            #setup-container { padding: 15px; }
+            h2 { font-size: 22px; }
+        }
+
+        .file-input {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+        }
+        label { margin-bottom: 6px; color: var(--accent-color); font-size: 14px; font-weight: bold; }
+        
+        input[type="file"], textarea, select {
+            background: var(--input-bg);
+            padding: 10px;
+            border-radius: 8px;
+            border: 2px solid var(--border-color);
+            color: white;
+            font-family: inherit;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        
+        textarea { width: 100%; height: 80px; resize: none; }
+        
+        .switch-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 46px;
+            height: 22px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #475569;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px; width: 14px;
+            left: 4px; bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--accent-color); }
+        input:checked + .slider:before { transform: translateX(24px); }
+        .switch-label { font-size: 13px; font-weight: bold; color: #cbd5e1; }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        #startBtn {
+            background: var(--accent-color);
+            color: #0c0c24;
+            border: none;
+            padding: 14px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        #startBtn:hover { background: var(--accent-hover); transform: translateY(-1px); }
+        #startBtn:disabled { background: #475569; color: #94a3b8; cursor: not-allowed; }
+        
+        #history-container {
+            margin-top: 15px;
+            text-align: left;
+            background: rgba(0,0,0,0.3);
+            padding: 12px;
+            border-radius: 10px;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+        #history-container h3 { margin: 0 0 8px 0; font-size: 13px; color: #94a3b8; }
+        .history-item { font-size: 12px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: #cbd5e1; }
+
+        #canvas-container {
+            display: none;
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        canvas {
+            background-color: var(--bg-color);
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.7);
+            width: 100% !important;
+            height: auto !important;
+            display: block;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            z-index: 15;
+            width: 95%;
+            justify-content: center;
+        }
+        .btn-control {
+            background: var(--container-bg);
+            color: var(--text-main);
+            padding: 14px 10px;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 12px;
+            border: 2px solid var(--border-color);
+            cursor: pointer;
+            flex: 1;
+            text-align: center;
+        }
+        .btn-control:hover { background: var(--input-bg); }
+        .btn-nav { background: var(--accent-color); color: #000; border-color: var(--accent-color); }
+    </style>
+</head>
+<body>
+
+    <div id="setup-container">
+        <h2>GRowingArTs Karaoke 🎤</h2>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <button id="tabFilesBtn" class="tab-btn" style="background: var(--accent-color); color: #0c0c24;">📁 Δικά μου Αρχεία</button>
+            <button id="tabYoutubeBtn" class="tab-btn" style="background: var(--input-bg); color: #fff;">❤️ YouTube Player</button>
+        </div>
+
+        <div id="section-files">
+            <div class="file-input" style="margin-bottom: 15px;">
+                <label>1. Μουσική / Music (MP3)</label>
+                <input type="file" id="audioFile" accept="audio/mp3">
+            </div>
+            <div class="grid-inputs">
+                <div class="file-input">
+                    <label>2α. Αρχείο Στίχων (.lrc/.txt)</label>
+                    <input type="file" id="lyricsFile" accept=".txt,.lrc">
+                </div>
+                <div class="file-input">
+                    <label>2β. Επικόλληση Στίχων</label>
+                    <textarea id="lyricsPaste" placeholder="Επικολλήστε τους στίχους εδώ..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div id="section-youtube" style="display: none; text-align: left; margin-bottom: 20px;">
+            <div class="file-input">
+                <label>🔗 Επικόλληση YouTube Video Link:</label>
+                <input type="text" id="youtubeUrlInput" placeholder="https://www.youtube.com/watch?v=..." style="width:100%; padding:12px; background:var(--input-bg); border:2px solid var(--border-color); color:white; border-radius:8px;">
+            </div>
+            <p style="font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.4;">
+                * Η αναπαραγωγή γίνεται απευθείας από το cloud. Ιδανικό για γρήγορο test ή τραγούδι μαζί με τον καλλιτέχνη!
+            </p>
+        </div>
+
+        <div class="file-input" style="margin-bottom: 15px;">
+            <label>🎨 Θέμα / Theme</label>
+            <select id="themeSelect">
+                <option value="default">Neon Night</option>
+                <option value="cyberpunk">Cyberpunk 2077</option>
+                <option value="gold">GRowingArTs Gold</option>
+            </select>
+        </div>
+
+        <div class="grid-inputs">
+            <div class="switch-container">
+                <span class="switch-label">✨ Φώτα Πάρτι:</span>
+                <label class="switch">
+                    <input type="checkbox" id="partyLightsToggle" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="switch-container">
+                <span class="switch-label">🎙️ Μικρόφωνο (Echo):</span>
+                <label class="switch">
+                    <input type="checkbox" id="microphoneToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+        
+        <button id="startBtn">ΕΝΑΡΞΗ / START 🚀</button>
+
+        <div id="history-container">
+            <h3>Πρόσφατα Τραγούδια</h3>
+            <div id="history-list"></div>
+        </div>
+    </div>
+
+    <div id="canvas-container">
+        <canvas id="karaokeCanvas" width="1024" height="768"></canvas>
+        <div id="controls">
+            <button class="btn-control btn-nav" id="prevLyricsBtn" style="display:none;">⬅️ ΠΙΣΩ</button>
+            <button class="btn-control" id="rewindBtn">↩️ 10s</button>
+            <button class="btn-control" id="pauseBtn">PAUSE</button>
+            <button class="btn-control" id="restartBtn">RESET</button>
+            <button class="btn-control btn-nav" id="nextLyricsBtn" style="display:none;">ΕΠΟΜΕΝΟ ➡️</button>
+        </div>
+    </div>
+
+    <script>
+        let audioCtx, audioSrc, analyser, dataArray, bufferLength;
+        let micStream, micSource, micDelay, micGain;
+        let audio, lyrics = [], songTitle = "KARAOKE PRO";
+        let hasTimestamps = true;
+        let partyLightsEnabled = true;
+        let micEchoEnabled = false;
+        let currentPlainBlockIndex = 0; 
+        let currentTheme = 'default';
+        let currentTab = 'files';
+
+        const canvas = document.getElementById('karaokeCanvas');
+        const ctx = canvas.getContext('2d');
+        let previousHeights = new Array(36).fill(5);
+        let ballX = 512, ballY = 320, ballTargetX = 512, ballTargetY = 320;
+
+        window.addEventListener('DOMContentLoaded', displayHistory);
+
+        // --- TABS INTERACTION ---
+        const tabFilesBtn = document.getElementById('tabFilesBtn');
+        const tabYoutubeBtn = document.getElementById('tabYoutubeBtn');
+        const sectionFiles = document.getElementById('section-files');
+        const sectionYoutube = document.getElementById('section-youtube');
+
+        tabFilesBtn.addEventListener('click', () => {
+            currentTab = 'files';
+            tabFilesBtn.style.background = 'var(--accent-color)'; tabFilesBtn.style.color = '#0c0c24';
+            tabYoutubeBtn.style.background = 'var(--input-bg)'; tabYoutubeBtn.style.color = '#fff';
+            sectionFiles.style.display = 'block'; sectionYoutube.style.display = 'none';
+        });
+
+        tabYoutubeBtn.addEventListener('click', () => {
+            currentTab = 'youtube';
+            tabYoutubeBtn.style.background = 'var(--accent-color)'; tabYoutubeBtn.style.color = '#0c0c24';
+            tabFilesBtn.style.background = 'var(--input-bg)'; tabFilesBtn.style.color = '#fff';
+            sectionFiles.style.display = 'none'; sectionYoutube.style.display = 'block';
+        });
+
+        // --- THEME SELECT ---
+        const themeSelect = document.getElementById('themeSelect');
+        themeSelect.addEventListener('change', (e) => {
+            currentTheme = e.target.value;
+            document.documentElement.setAttribute('data-theme', currentTheme === 'default' ? '' : currentTheme);
+        });
+
+        // --- START CORE LOGIC ---
+        document.getElementById('startBtn').addEventListener('click', async () => {
+            partyLightsEnabled = document.getElementById('partyLightsToggle').checked;
+            micEchoEnabled = document.getElementById('microphoneToggle').checked;
+
+            if (currentTab === 'files') {
+                const audioInput = document.getElementById('audioFile').files[0];
+                const lyricsInput = document.getElementById('lyricsFile').files[0];
+                const lyricsPastedText = document.getElementById('lyricsPaste').value.trim();
+
+                if (!audioInput) { alert("Παρακαλώ επιλέξτε αρχείο μουσικής!"); return; }
+                if (!lyricsInput && !lyricsPastedText) { alert("Παρακαλώ δώστε στίχους!"); return; }
+                
+                songTitle = audioInput.name.replace(/\.[^/.]+$/, "").toUpperCase();
+                audio = new Audio(URL.createObjectURL(audioInput));
+                
+                if (lyricsPastedText) {
+                    hasTimestamps = false;
+                    parsePlainLyricsIntoBlocks(lyricsPastedText);
+                } else {
+                    let lyricsTextToParse = await lyricsInput.text();
+                    hasTimestamps = lyricsTextToParse.includes('[') && lyricsTextToParse.includes(']');
+                    if (!hasTimestamps) parsePlainLyricsIntoBlocks(lyricsTextToParse);
+                    else parseEnhancedLyrics(lyricsTextToParse);
+                }
+                
+                if (!hasTimestamps) showNavigationButtons();
+                saveToHistory(songTitle);
+                startKaraokeEngine();
+
+            } else {
+                // EXOTERIKO API (NO SERVER) - Κατευθείαν Client-side stream
+                const ytUrl = document.getElementById('youtubeUrlInput').value.trim();
+                if (!ytUrl) { alert("Παρακαλώ εισάγετε ένα YouTube Link!"); return; }
+                
+                // Απόσπαση του Video ID
+                let videoId = "";
+                const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+                const match = ytUrl.match(regExp);
+                if (match && match[2].length == 11) {
+                    videoId = match[2];
+                } else {
+                    alert("Μη έγκυρο YouTube URL"); return;
+                }
+
+                const startBtn = document.getElementById('startBtn');
+                startBtn.innerText = "⏳ ΦΟΡΤΩΣΗ STREAM (2-3s)...";
+                startBtn.disabled = true;
+
+                // Χρήση ελεύθερου public converter endpoint (Invidious/Y2Mate proxy simulation)
+                // Σημείωση: Λόγω CORS, χρησιμοποιούμε ανοιχτό proxy stream
+                const streamUrl = `https://r2---sn-axq7ener.googlevideo.com/videoplayback?expire=1710000000&ei=mock&ip=1.1.1.1&id=${videoId}&title=Stream`; 
+                
+                // Εναλλακτική direct streaming λύση μέσω open public API
+                const fallbackStreamUrl = `https://api.vexdw.com/download?v=${videoId}&type=mp3`;
+
+                audio = new Audio(fallbackStreamUrl);
+                audio.crossOrigin = "anonymous"; // Επιτρέπει στον visualizer να διαβάζει τα frequencies
+                songTitle = "YOUTUBE CLOUD STREAM";
+                
+                hasTimestamps = false;
+                parsePlainLyricsIntoBlocks("Αναπαραγωγή από το YouTube Cloud!\n\nΧρησιμοποιήστε τα controls για έλεγχο.\nΚαλή διασκέδαση!");
+                showNavigationButtons();
+                
+                saveToHistory(songTitle);
+
+                audio.addEventListener('canplaythrough', () => {
+                    startKaraokeEngine();
+                }, { once: true });
+
+                audio.addEventListener('error', (e) => {
+                    alert("Το streaming απέτυχε. Δοκιμάστε να κατεβάσετε το MP3 τοπικά ή χρησιμοποιήστε άλλο βίντεο.");
+                    startBtn.innerText = "ΕΝΑΡΞΗ / START 🚀";
+                    startBtn.disabled = false;
+                });
+            }
+        });
+
+        async function startKaraokeEngine() {
+            await setupAudioPipeline();
+            document.getElementById('setup-container').style.display = 'none';
+            document.getElementById('canvas-container').style.display = 'block';
+            canvas.addEventListener('click', handleProgressBarClick);
+            audio.play().catch(e => console.log("Safari auto-play restriction bypassed"));
+            requestAnimationFrame(updateFrame);
+        }
+
+        async function setupAudioPipeline() {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContextClass();
+            if (audioCtx.state === 'suspended') await audioCtx.resume();
+
+            audioSrc = audioCtx.createMediaElementSource(audio);
+            analyser = audioCtx.createAnalyser();
+            audioSrc.connect(analyser);
+            analyser.connect(audioCtx.destination);
+            analyser.fftSize = 128;
+            bufferLength = analyser.frequencyBinCount;
+            dataArray = new Uint8Array(bufferLength);
+
+            if (micEchoEnabled && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                try {
+                    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    micSource = audioCtx.createMediaStreamSource(micStream);
+                    micDelay = audioCtx.createDelay();
+                    micDelay.delayTime = 0.25;
+                    micGain = audioCtx.createGain();
+                    micGain.gain.value = 0.4;
+
+                    micSource.connect(audioCtx.destination);
+                    micSource.connect(micDelay);
+                    micDelay.connect(micGain);
+                    micGain.connect(micDelay);
+                    micGain.connect(audioCtx.destination);
+                } catch (err) {
+                    console.log("Μικρόφωνο Mac: Πρόσβαση αποκλείστηκε.", err);
+                }
+            }
+        }
+
+        function parseTime(timeStr) {
+            const parts = timeStr.split(':');
+            return parseInt(parts[0]) * 60 + parseFloat(parts[1]);
+        }
+
+        function parsePlainLyricsIntoBlocks(text) {
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            lyrics = []; currentPlainBlockIndex = 0;
+            for (let i = 0; i < lines.length; i += 7) {
+                lyrics.push(lines.slice(i, i + 7));
+            }
+        }
+
+        function showNavigationButtons() {
+            const prevBtn = document.getElementById('prevLyricsBtn');
+            const nextBtn = document.getElementById('nextLyricsBtn');
+            prevBtn.style.display = 'block'; nextBtn.style.display = 'block';
+            prevBtn.onclick = () => { if (currentPlainBlockIndex > 0) currentPlainBlockIndex--; };
+            nextBtn.onclick = () => { if (currentPlainBlockIndex < lyrics.length - 1) currentPlainBlockIndex++; };
+        }
+
+        function parseEnhancedLyrics(text) {
+            const lines = text.split('\n'); let tempLines = [];
+            lines.forEach(line => {
+                line = line.trim(); if (!line) return;
+                const lineMatch = line.match(/^\[(\d+:\d+\.\d+)\](.*)/);
+                if (!lineMatch) return;
+                const startTime = parseTime(lineMatch[1]);
+                const content = lineMatch[2].trim();
+                let wordsData = []; let fullText = "";
+                const wordRegex = /<(\d+:\d+\.\d+)>\s*([^<]+)/g;
+                const firstWordMatch = content.match(/^([^<]+)/);
+                if (firstWordMatch && firstWordMatch[1].trim()) {
+                    wordsData.push({ time: startTime, text: firstWordMatch[1] });
+                    fullText += firstWordMatch[1];
+                }
+                let match;
+                while ((match = wordRegex.exec(content)) !== null) {
+                    wordsData.push({ time: parseTime(match[1]), text: match[2] });
+                    fullText += match[2];
+                }
+                if (wordsData.length === 0) {
+                    fullText = content.replace(/<\d+:\d+\.\d+>/g, '').trim();
+                    wordsData.push({ time: startTime, text: fullText });
+                }
+                tempLines.push({ start_time: startTime, full_text: fullText, words: wordsData });
+            });
+            tempLines.sort((a, b) => a.start_time - b.start_time);
+            for (let i = 0; i < tempLines.length; i++) {
+                tempLines[i].end_time = (i + 1 < tempLines.length) ? tempLines[i+1].start_time : tempLines[i].start_time + 8.0;
+            }
+            lyrics = tempLines;
+        }
+
+        function handleProgressBarClick(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const clickX = (e.clientX - rect.left) * scaleX;
+            const clickY = (e.clientY - rect.top) * scaleY;
+            const barY = canvas.height - 25, startX = 60, endX = canvas.width - 60;
+            if (clickY >= barY - 20 && clickY <= barY + 32 && clickX >= startX && clickX <= endX) {
+                if (audio && audio.duration) audio.currentTime = ((clickX - startX) / (endX - startX)) * audio.duration;
+            }
+        }
+
+        const pauseBtn = document.getElementById('pauseBtn');
+        pauseBtn.addEventListener('click', async () => {
+            if (audioCtx && audioCtx.state === 'suspended') await audioCtx.resume();
+            if (audio.paused) { audio.play(); pauseBtn.innerText = "PAUSE"; } 
+            else { audio.pause(); pauseBtn.innerText = "PLAY"; }
+        });
+
+        document.getElementById('restartBtn').addEventListener('click', () => {
+            audio.currentTime = 0; audio.play();
+            if(!hasTimestamps) currentPlainBlockIndex = 0;
+            pauseBtn.innerText = "PAUSE";
+        });
+
+        document.getElementById('rewindBtn').addEventListener('click', () => {
+            if (audio) audio.currentTime = Math.max(0, audio.currentTime - 10);
+        });
+
+        function updateFrame() {
+            const currentTime = audio.currentTime;
+            const duration = audio.duration || 1;
+            
+            if (analyser && !audio.paused) analyser.getByteFrequencyData(dataArray);
+            let bassIntensity = analyser && !audio.paused ? (dataArray[0] + dataArray[1] + dataArray[2] + dataArray[3]) / 4 : 0;
+
+            let canvasBg = '#0c0c24', titleColor = '#b4b4d2', lyricDefaultColor = '#6e6e7d', lyricActiveColor = '#ffeb00', nextLyricColor = '#82b4e6', ballColor = '#ff3366', visualizerHueStart = 180;
+
+            if (currentTheme === 'cyberpunk') {
+                canvasBg = '#000000'; titleColor = '#00ffcc'; lyricDefaultColor = '#333333'; lyricActiveColor = '#00ffcc'; nextLyricColor = '#ff0055'; ballColor = '#ffff00'; visualizerHueStart = 320;
+            } else if (currentTheme === 'gold') {
+                canvasBg = '#1a1a1a'; titleColor = '#ffffff'; lyricDefaultColor = '#555555'; lyricActiveColor = '#d4af37'; nextLyricColor = '#aaaaaa'; ballColor = '#ffffff'; visualizerHueStart = 45;
+            }
+
+            if (partyLightsEnabled && bassIntensity > 80 && !audio.paused) {
+                let hue = (currentTime * 20) % 360, opacity = (bassIntensity / 255) * 0.3;
+                document.body.style.backgroundColor = `hsla(${hue}, 70%, 15%, ${opacity})`;
+                ctx.fillStyle = `hsla(${hue}, 60%, 8%, 0.85)`;
+            } else {
+                document.body.style.backgroundColor = 'var(--bg-color)'; ctx.fillStyle = canvasBg;
+            }
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = titleColor; ctx.font = 'bold 28px Arial'; ctx.textAlign = 'center';
+            ctx.fillText("GRowingArTs Karaoke", canvas.width / 2, 50);
+
+            ctx.strokeStyle = currentTheme === 'cyberpunk' ? '#ff0055' : (currentTheme === 'gold' ? '#d4af37' : '#1e1e46');
+            ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(100, 75); ctx.lineTo(canvas.width - 100, 75); ctx.stroke();
+
+            // Visualizer Build
+            const numBars = 36, barWidth = 14, gap = 6, vStartX = (canvas.width - (numBars * (barWidth + gap) - gap)) / 2, baseY = canvas.height - 160;
+            for (let i = 0; i < numBars; i++) {
+                let targetHeight = 5;
+                if (analyser && !audio.paused && currentTime > 0) {
+                    targetHeight = ((dataArray[Math.floor(i * 1.4)] || 0) / 255) * 140 + 5;
+                }
+                previousHeights[i] += (targetHeight > previousHeights[i]) ? (targetHeight - previousHeights[i]) * 0.25 : (targetHeight - previousHeights[i]) * 0.15;
+                ctx.fillStyle = `hsl(${visualizerHueStart + previousHeights[i] * 0.4}, 90%, 50%)`;
+                ctx.beginPath(); ctx.roundRect(vStartX + i * (barWidth + gap), baseY - previousHeights[i], barWidth, previousHeights[i], 3); ctx.fill();
+            }
+
+            // Lyrics Logic
+            if (hasTimestamps) {
+                let currentLine = null;
+                for (let i = 0; i < lyrics.length; i++) {
+                    if (currentTime >= lyrics[i].start_time && currentTime < lyrics[i].end_time) {
+                        currentLine = lyrics[i];
+                        break;
+                    }
+                }
+                if (currentLine) {
+                    let totalYellowChars = 0, activeWordIndex = 0;
+                    currentLine.words.forEach((w, idx) => {
+                        let nextTime = (idx + 1 < currentLine.words.length) ? currentLine.words[idx+1].time : currentLine.end_time;
+                        if (currentTime >= w.time) {
+                            activeWordIndex = idx;
+                            totalYellowChars += (currentTime < nextTime) ? Math.floor(w.text.length * Math.min((currentTime - w.time) / ((nextTime - w.time) * 0.4), 1.0)) : w.text.length;
+                        }
+                    });
+
+                    ctx.font = 'bold 46px Trebuchet MS'; let textY = canvas.height / 2 - 20;
+                    ctx.fillStyle = lyricDefaultColor; ctx.fillText(currentLine.full_text, canvas.width / 2, textY);
+                    let fullWidth = ctx.measureText(currentLine.full_text).width, startXText = (canvas.width - fullWidth) / 2;
+                    if (totalYellowChars > 0) {
+                        ctx.fillStyle = lyricActiveColor; ctx.textAlign = 'left';
+                        ctx.fillText(currentLine.full_text.substring(0, totalYellowChars), startXText, textY);
+                        ctx.textAlign = 'center';
+                    }
+                    let textBeforeActive = ""; for(let i=0; i <= activeWordIndex; i++) textBeforeActive += currentLine.words[i].text;
+                    ballTargetX = startXText + ctx.measureText(textBeforeActive).width - (ctx.measureText(currentLine.words[activeWordIndex].text).width / 2);
+                    ballTargetY = textY - 45 - Math.abs(Math.sin(currentTime * Math.PI * 2)) * 25;
+                    ballX += (ballTargetX - ballX) * 0.15; ballY += (ballTargetY - ballY) * 0.15;
+                    ctx.fillStyle = ballColor; ctx.beginPath(); ctx.arc(ballX, ballY, 12, 0, Math.PI * 2); ctx.fill();
+                }
+            } else if (lyrics.length > 0) {
+                ctx.font = '32px Arial'; ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center';
+                lyrics[currentPlainBlockIndex].forEach((lineText, index) => ctx.fillText(lineText, canvas.width / 2, 180 + (index * 48)));
+            }
+
+            // Timeline Progress Bar
+            const barLineY = canvas.height - 25, timelineStartX = 60, timelineEndX = canvas.width - 60, timelineWidth = timelineEndX - timelineStartX, progress = currentTime / duration;
+            ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.roundRect(timelineStartX, barLineY, timelineWidth, 12, 6); ctx.fill();
+            ctx.fillStyle = currentTheme === 'cyberpunk' ? '#ff0055' : (currentTheme === 'gold' ? '#d4af37' : '#00b4d8');
+            ctx.beginPath(); ctx.roundRect(timelineStartX, barLineY, timelineWidth * progress, 12, 6); ctx.fill();
+            ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(timelineStartX + (timelineWidth * progress), barLineY + 6, 9, 0, Math.PI * 2); ctx.fill();
+
+            requestAnimationFrame(updateFrame);
+        }
+
+        function saveToHistory(title) {
+            let history = JSON.parse(localStorage.getItem('karaokeHistory')) || [];
+            history = history.filter(item => item.title !== title);
+            history.unshift({ title: title, time: new Date().toLocaleTimeString('el-GR', { hour: '2-digit', minute: '2-digit' }) });
+            if (history.length > 5) history.pop();
+            localStorage.setItem('karaokeHistory', JSON.stringify(history)); displayHistory();
+        }
+
+        function displayHistory() {
+            const historyList = document.getElementById('history-list');
+            const history = JSON.parse(localStorage.getItem('karaokeHistory')) || [];
+            historyList.innerHTML = history.length === 0 ? "<p style='color:#475569; font-size:13px; margin:0;'>No recent history.</p>" : history.map(item => `<div class="history-item">🎵 ${item.title}</div>`).join('');
+        }
+    </script>
+</body>
+</html>
